@@ -98,4 +98,19 @@ Expected output: Only return a valid JSON array like this:
 
  ''';
   }
+
+  static String translateText({required String word,required String toLang,required String fromLang}) {
+    return '''You are a translation assistant.  
+Translate the given word ${word} from ${fromLang} to ${toLang}.  
+Always return the most common, simple, and easily understandable word in the target language (avoid rare, formal, or overly complex words).  
+Return the result **only** in JSON format with the following structure, without any extra explanation or text:
+
+{
+  "word": "{Word}",
+  "from": "{FromLanguage}",
+  "to": "{ToLanguage}",
+  "translation": "{TranslatedWord}"
+}
+ ''';
+  }
 }
