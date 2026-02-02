@@ -1,7 +1,7 @@
 import 'package:ai_text_to_speech/Utils/prompts.dart';
 import 'package:ai_text_to_speech/model/gemini_response_model.dart';
 import 'package:ai_text_to_speech/model/hive_model.dart';
-import 'package:ai_text_to_speech/services/gemini_mcqs_generator.dart';
+import 'package:ai_text_to_speech/services/openai_mcqs_generator.dart';
 import 'package:bloc/bloc.dart';
 import 'package:meta/meta.dart';
 
@@ -15,8 +15,8 @@ class FavouriteQuizBloc extends Bloc<FavouriteQuizEvent, FavouriteQuizState> {
       emit(FavouriteQuizLoadingState());
       try
           {
-            final GeminiMCQService geminiMCQService=GeminiMCQService();
-            List<MCQQuestion>? mcqs=await geminiMCQService.generateMCQs(prompt_message:Prompts.favouriteQuizPrompt(words: words));
+            final openai = OpenAIMCQService();
+            List<MCQQuestion>? mcqs=await openai.generateMCQs(prompt_message:Prompts.favouriteQuizPrompt(words: words));
             return emit(FavouriteQuizLoadedState(mcqs: mcqs));
           }catch(e){
         return emit(FavouriteQuizErrorState(error: e.toString()));

@@ -385,69 +385,45 @@ class _GeneralWordQuizScreenState extends State<GeneralWordQuizScreen> {
 
         },
       ),
-      floatingActionButton:
-          (mcqsNumber + 1) < int.parse(widget.selectedMcqsCount)
-              ? Padding(
-                padding: const EdgeInsets.only(left: 30, right: 5),
-                child: GestureDetector(
-                  onTap: () async {
-                    setState(() {
-                      if (selectedOption == null) {
-                        selectedOption = '';
-                      } else {
-                        if (selectedOption == correctOption) {
-                          correctAnswers++;
-                        }
-                        selectedOption = null;
-                        mcqsNumber++;
-                      }
-                    });
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: Color.fromRGBO(0, 51, 102, 1),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Next',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              )
-              : Padding(
-                padding: const EdgeInsets.only(left: 30, right: 5),
-                child: GestureDetector(
-                  onTap: () async {
-                    setState(() {
-                      if (selectedOption == null) {
-                        selectedOption = '';
-                      } else {
-                        if (selectedOption == correctOption) {
-                          correctAnswers++;
-                        }
-                        selectedOption = null;
-                      }
-                    });
+      floatingActionButton: BlocBuilder<GeneralquizBloc, GeneralquizState>(
+        builder: (context, state) {
+          if (state is GeneralQuizLoadedState && widget.selectedMcqsCount.isNotEmpty) {
+            final data = state.mcqs;
+            final hasQuestions = (data != null && data.isNotEmpty);
+            if (!hasQuestions) return SizedBox.shrink();
+
+            final isLast = (mcqsNumber + 1) >= int.parse(widget.selectedMcqsCount);
+            final canProceed = selectedOption != null && selectedOption!.isNotEmpty;
+
+            return Padding(
+              padding: const EdgeInsets.only(left: 30, right: 5),
+              child: GestureDetector(
+                onTap: !canProceed
+                    ? null
+                    : () async {
+                  setState(() {
+                    if (selectedOption == correctOption) {
+                      correctAnswers++;
+                    }
+                    selectedOption = null;
+                    if (!isLast) {
+                      mcqsNumber++;
+                    }
+                  });
+                  if (isLast) {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder:
-                            (context) => TestResultScreen(
-                              correctAnswers: correctAnswers,
-                              totalScore: int.parse(widget.selectedMcqsCount),
-                            ),
+                        builder: (context) => TestResultScreen(
+                          correctAnswers: correctAnswers,
+                          totalScore: int.parse(widget.selectedMcqsCount),
+                        ),
                       ),
                     );
-                  },
+                  }
+                },
+                child: Opacity(
+                  opacity: canProceed ? 1 : 0.6,
                   child: Container(
                     width: double.infinity,
                     height: 50,
@@ -457,7 +433,7 @@ class _GeneralWordQuizScreenState extends State<GeneralWordQuizScreen> {
                     ),
                     child: Center(
                       child: Text(
-                        'Check Result',
+                        isLast ? 'Check Result' : 'Next',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 20,
@@ -468,6 +444,12 @@ class _GeneralWordQuizScreenState extends State<GeneralWordQuizScreen> {
                   ),
                 ),
               ),
+            );
+          }
+          // Hide FAB while loading or on error
+          return SizedBox.shrink();
+        },
+      ),
     );
   }
 }

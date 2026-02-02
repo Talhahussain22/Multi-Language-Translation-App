@@ -1,6 +1,6 @@
 import 'package:ai_text_to_speech/Utils/prompts.dart';
 import 'package:ai_text_to_speech/model/history_model.dart';
-import 'package:ai_text_to_speech/services/gemini_translate.dart';
+import 'package:ai_text_to_speech/services/openai_translate.dart';
 import 'package:ai_text_to_speech/services/network_services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:hive/hive.dart';
@@ -22,8 +22,7 @@ class OnTranslateBloc extends Bloc<OnTranslateEvent, OnTranslateState> {
         final text=event.text;
         final fromLanguage=event.fromLanguage;
         final toLanguage=event.toLanguage;
-        NetworkServices network_sevices=NetworkServices();
-        String output= await Translate().TranslateWord(prompt_message: Prompts.translateText(word:text, toLang: toLanguage, fromLang: fromLanguage));
+        String output= await OpenAITranslate().TranslateWord(prompt_message: Prompts.translateText(word:text, toLang: toLanguage, fromLang: fromLanguage));
 
         final hivebox=Hive.box<HistoryModel>('History');
         hivebox.add(HistoryModel(word: text, translation: output, fromLanguage: fromLanguage, toLanguage: toLanguage));

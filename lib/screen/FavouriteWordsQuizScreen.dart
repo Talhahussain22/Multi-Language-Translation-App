@@ -379,88 +379,70 @@ class _FavouriteWordsQuizScreenState extends State<FavouriteWordsQuizScreen> {
         },
 
       ),
-      floatingActionButton:
-      (mcqsNumber + 1) < totalMcqs!
-          ? Padding(
-        padding: const EdgeInsets.only(left: 30, right: 5),
-        child: GestureDetector(
-          onTap: () async {
-            setState(() {
-              if (selectedOption == null) {
-                selectedOption = '';
-              } else {
-                if (selectedOption == correctOption) {
-                  correctAnswers++;
-                }
-                selectedOption = null;
-                mcqsNumber++;
-              }
-            });
-          },
-          child: Container(
-            width: double.infinity,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Color.fromRGBO(0, 51, 102, 1),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Center(
-              child: Text(
-                'Next',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ),
-      )
-          : Padding(
-        padding: const EdgeInsets.only(left: 30, right: 5),
-        child: GestureDetector(
-          onTap: () async {
-            setState(() {
-              if (selectedOption == null) {
-                selectedOption = '';
-              } else {
-                if (selectedOption == correctOption) {
-                  correctAnswers++;
-                }
-                selectedOption = null;
-              }
-            });
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (context) => TestResultScreen(
-                  correctAnswers: correctAnswers,
-                  totalScore: totalMcqs!,
+      floatingActionButton: BlocBuilder<FavouriteQuizBloc, FavouriteQuizState>(
+        builder: (context, state) {
+          if (state is FavouriteQuizLoadedState && totalMcqs != null) {
+            final data = state.mcqs;
+            final hasQuestions = (data != null && data.isNotEmpty);
+            if (!hasQuestions) return SizedBox.shrink();
+
+            final isLast = (mcqsNumber + 1) >= totalMcqs!;
+            final canProceed = selectedOption != null && selectedOption!.isNotEmpty;
+
+            return Padding(
+              padding: const EdgeInsets.only(left: 30, right: 5),
+              child: GestureDetector(
+                onTap: !canProceed
+                    ? null
+                    : () async {
+                        setState(() {
+                          if (selectedOption == correctOption) {
+                            correctAnswers++;
+                          }
+                          selectedOption = null;
+                          if (!isLast) {
+                            mcqsNumber++;
+                          }
+                        });
+                        if (isLast) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TestResultScreen(
+                                correctAnswers: correctAnswers,
+                                totalScore: totalMcqs!,
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                child: Opacity(
+                  opacity: canProceed ? 1 : 0.6,
+                  child: Container(
+                    width: double.infinity,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Color.fromRGBO(0, 51, 102, 1),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Center(
+                      child: Text(
+                        isLast ? 'Check Result' : 'Next',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             );
-          },
-          child: Container(
-            width: double.infinity,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Color.fromRGBO(0, 51, 102, 1),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Center(
-              child: Text(
-                'Check Result',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ),
+          }
+          // Hide FAB while loading or on error
+          return SizedBox.shrink();
+        },
       ),
     );
   }
