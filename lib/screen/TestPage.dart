@@ -7,6 +7,70 @@ class TestPage extends StatelessWidget {
   
   int count=10;
 
+  Widget _testCard({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 1,
+      color: Colors.white,
+      shadowColor: Colors.black12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: Colors.black12, width: 0.8)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1976D2).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF1976D2).withOpacity(0.18)),
+                ),
+                child: Icon(icon, color: const Color(0xFF1976D2), size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.deepOrange.withOpacity(0.10),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.deepOrange.withOpacity(0.18)),
+                          ),
+                          child: const Text('Tap to start', style: TextStyle(color: Colors.deepOrange, fontSize: 11, fontWeight: FontWeight.w500)),
+                        )
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(subtitle, style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(Icons.chevron_right, color: Colors.black45),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,10 +89,6 @@ class TestPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // This page will ask about genral test or test from favourite etc
-              // Next page for general mcqs with contain below things
-              // 4 drop down (from language to language difficulty level and count of mcqs
-              // final Start Quiz Button
               Center(child: Image.asset('assets/brain2.png',height: 150,)),
               Center(child: Text('Ready to challenge your brain?',style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold,letterSpacing: 0,color: Colors.grey.shade800),)),
               const SizedBox(height: 20),
@@ -40,76 +100,40 @@ class TestPage extends StatelessWidget {
               const SizedBox(height: 20),
               Text('Available Tests',style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold,letterSpacing: 0,color: Colors.grey.shade800),),
               const SizedBox(height: 10),
-              GestureDetector(
-                onTap: (){
+
+              _testCard(
+                context: context,
+                icon: Icons.menu_book,
+                title: 'Favourite Words',
+                subtitle: 'Reflective Learning • Pick your number of questions',
+                onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (context)=>FavouriteWordTestScreen()));
                 },
-                child: Padding(
-                  padding: const EdgeInsets.all(5.0),
-                  child: Row(
-                    children: [
-                      Container(
-                        height: 50,
-                        padding: EdgeInsets.symmetric(horizontal: 15),
-                        decoration:BoxDecoration(
-                          gradient: LinearGradient(colors: [
-                            Color.fromRGBO(10, 25, 49, 1.0),    // Very dark blue
-                            Color.fromRGBO(25, 118, 210, 1.0),
-                          ]),
-                          borderRadius: BorderRadius.circular(10)
-                        ) ,
-                        child: Icon(Icons.menu_book,color: Colors.white,),
-                      ),
-                      const SizedBox(width: 15),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Favourite Words',style: TextStyle(fontWeight: FontWeight.w500,fontSize: 15,letterSpacing: 0),),
-                          Text('Reflective Learning',style: TextStyle(color: Colors.grey.shade800,letterSpacing: 0),)
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
               ),
               const SizedBox(height: 10),
-              GestureDetector(
-                onTap: (){
+              _testCard(
+                context: context,
+                icon: Icons.article,
+                title: 'General Words',
+                subtitle: 'Vocabulary Booster • Default 10 questions',
+                onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (context)=>GeneralTestScreen()));
                 },
-                child: Padding(
-                  padding: const EdgeInsets.all(5.0),
-                  child: Row(
-                    children: [
-                      Container(
-                        height: 50,
-                        padding: EdgeInsets.symmetric(horizontal: 15),
-                        decoration:BoxDecoration(
-                          gradient: LinearGradient(colors: [
-                            Color.fromRGBO(10, 25, 49, 1.0),    // Very dark blue
-                            Color.fromRGBO(25, 118, 210, 1.0),
-                          ]),
-                          borderRadius: BorderRadius.circular(10)
-                        ) ,
-                        child: Icon(Icons.article,color: Colors.white,),
-                      ),
-                      const SizedBox(width: 15),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('General Words',style: TextStyle(fontWeight: FontWeight.w500,fontSize: 15,letterSpacing: 0),),
-                          Text('Vocabulary Booster',style: TextStyle(color: Colors.grey.shade800,letterSpacing: 0),)
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              )
-          
-          
-          
+              ),
+
+              const SizedBox(height: 18),
+              Row(
+                children: const [
+                  Icon(Icons.info_outline, size: 18, color: Colors.black45),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'An ad may appear after you finish a test. We never show ads before starting.',
+                      style: TextStyle(color: Colors.black54, fontSize: 12),
+                    ),
+                  )
+                ],
+              ),
             ],
           ),
         ),

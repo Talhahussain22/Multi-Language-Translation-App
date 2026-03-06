@@ -44,104 +44,106 @@ class _GeneralTestScreenState extends State<GeneralTestScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 15),
-            Text(
-              'From Language',
-              style: TextStyle(
-                color: Colors.grey.shade800,
-                fontWeight: FontWeight.w600,
-                fontSize: 18,
-                letterSpacing: 0,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 15),
+              Text(
+                'From Language',
+                style: TextStyle(
+                  color: Colors.grey.shade800,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                  letterSpacing: 0,
+                ),
               ),
-            ),
-            CustomDropDown(
-              color: Color.fromRGBO(0, 51, 102, 1),
-              dropdowniconcolor: Colors.white,
-              textcolor: Colors.white,
-              dropdownColor: Color(0xFF2C2C3C),
-              items: items,
-              onChanged: (String? val) {
-                setState(() {
-                  selectedfromLanguage = val!;
-                });
-              },
-              selectedValue: selectedfromLanguage,
-            ),
-            const SizedBox(height: 15),
-            Text(
-              'To Language',
-              style: TextStyle(
-                color: Colors.grey.shade800,
-                fontWeight: FontWeight.w600,
-                fontSize: 18,
-                letterSpacing: 0,
+              CustomDropDown(
+                color: Color.fromRGBO(0, 51, 102, 1),
+                dropdowniconcolor: Colors.white,
+                textcolor: Colors.white,
+                dropdownColor: Color(0xFF2C2C3C),
+                items: items,
+                onChanged: (String? val) {
+                  setState(() {
+                    selectedfromLanguage = val!;
+                  });
+                },
+                selectedValue: selectedfromLanguage,
               ),
-            ),
-            CustomDropDown(
-              color: Color.fromRGBO(0, 51, 102, 1),
-              dropdowniconcolor: Colors.white,
-              textcolor: Colors.white,
-              dropdownColor: Color(0xFF2C2C3C),
-
-              items: items,
-              onChanged: (String? val) {
-                setState(() {
-                  selectedtoLanguage = val!;
-                });
-              },
-              selectedValue: selectedtoLanguage,
-            ),
-            const SizedBox(height: 15),
-            Text(
-              'Difficulty Level',
-              style: TextStyle(
-                color: Colors.grey.shade800,
-                fontWeight: FontWeight.w600,
-                fontSize: 18,
-                letterSpacing: 0,
+              const SizedBox(height: 15),
+              Text(
+                'To Language',
+                style: TextStyle(
+                  color: Colors.grey.shade800,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                  letterSpacing: 0,
+                ),
               ),
-            ),
-            CustomDropDown(
-              color: Color.fromRGBO(0, 51, 102, 1),
-              dropdowniconcolor: Colors.white,
-              textcolor: Colors.white,
-              dropdownColor: Color(0xFF2C2C3C),
-
-              items: difficultyLevel,
-              onChanged: (String? val) {
-                setState(() {
-                  selecteddifficultyLevel = val!;
-                });
-              },
-              selectedValue: selecteddifficultyLevel,
-            ),
-            const SizedBox(height: 15),
-            Text(
-              'Number of Quiz',
-              style: TextStyle(
-                color: Colors.grey.shade800,
-                fontWeight: FontWeight.w600,
-                fontSize: 18,
-                letterSpacing: 0,
+              CustomDropDown(
+                color: Color.fromRGBO(0, 51, 102, 1),
+                dropdowniconcolor: Colors.white,
+                textcolor: Colors.white,
+                dropdownColor: Color(0xFF2C2C3C),
+          
+                items: items,
+                onChanged: (String? val) {
+                  setState(() {
+                    selectedtoLanguage = val!;
+                  });
+                },
+                selectedValue: selectedtoLanguage,
               ),
-            ),
-            CustomDropDown(
-              color: Color.fromRGBO(0, 51, 102, 1),
-              dropdowniconcolor: Colors.white,
-              textcolor: Colors.white,
-              dropdownColor: Color(0xFF2C2C3C),
-              items: mcqsCount,
-              onChanged: (String? val) {
-                setState(() {
-                  selectedMcqsCount = val!;
-                });
-              },
-              selectedValue: selectedMcqsCount,
-            ),
-          ],
+              const SizedBox(height: 15),
+              Text(
+                'Difficulty Level',
+                style: TextStyle(
+                  color: Colors.grey.shade800,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                  letterSpacing: 0,
+                ),
+              ),
+              CustomDropDown(
+                color: Color.fromRGBO(0, 51, 102, 1),
+                dropdowniconcolor: Colors.white,
+                textcolor: Colors.white,
+                dropdownColor: Color(0xFF2C2C3C),
+          
+                items: difficultyLevel,
+                onChanged: (String? val) {
+                  setState(() {
+                    selecteddifficultyLevel = val!;
+                  });
+                },
+                selectedValue: selecteddifficultyLevel,
+              ),
+              const SizedBox(height: 15),
+              Text(
+                'Number of Quiz',
+                style: TextStyle(
+                  color: Colors.grey.shade800,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                  letterSpacing: 0,
+                ),
+              ),
+              CustomDropDown(
+                color: Color.fromRGBO(0, 51, 102, 1),
+                dropdowniconcolor: Colors.white,
+                textcolor: Colors.white,
+                dropdownColor: Color(0xFF2C2C3C),
+                items: mcqsCount,
+                onChanged: (String? val) {
+                  setState(() {
+                    selectedMcqsCount = val!;
+                  });
+                },
+                selectedValue: selectedMcqsCount,
+              ),
+            ],
+          ),
         ),
       ),
       floatingActionButton: Padding(

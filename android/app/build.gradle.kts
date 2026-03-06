@@ -12,7 +12,7 @@ val keystoreProperties = Properties().apply {
 }
 
 android {
-    namespace = "com.example.ai_text_to_speech"
+    namespace = "com.langrush.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
@@ -26,7 +26,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.ai_text_to_speech"
+        applicationId = "com.langrush.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

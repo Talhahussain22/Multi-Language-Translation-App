@@ -5,6 +5,7 @@ import 'package:ai_text_to_speech/model/hive_model.dart';
 import 'package:ai_text_to_speech/model/saved_language.dart';
 import 'package:ai_text_to_speech/screen/components/CustomTextFeild.dart';
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:ai_text_to_speech/screen/HistoryPage.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -66,6 +67,25 @@ class _HomePageState extends State<HomePage> {
           style: TextStyle(color: Colors.white),
         ),
         centerTitle: true,
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            onSelected: (value) {
+              if (value == 'history') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => HistoryPage()),
+                );
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: 'history',
+                child: Text('History'),
+              ),
+            ],
+          ),
+        ],
       ),
       body: BlocConsumer<OnTranslateBloc, OnTranslateState>(
         listener: (context, state) {

@@ -1,6 +1,7 @@
 import 'package:ai_text_to_speech/screen/FavouritePage.dart';
 import 'package:ai_text_to_speech/screen/HistoryPage.dart';
 import 'package:ai_text_to_speech/screen/Homepage.dart';
+import 'package:ai_text_to_speech/screen/SettingsScreen.dart';
 import 'package:ai_text_to_speech/screen/Summary.dart';
 import 'package:ai_text_to_speech/screen/TestPage.dart';
 import 'package:flutter/cupertino.dart';
@@ -18,7 +19,7 @@ class _DashboardState extends State<Dashboard> {
     Icons.summarize,
     Icons.translate,
     Icons.favorite_border,
-    Icons.history, // History
+    Icons.settings, // History
 
 
   ];
@@ -28,7 +29,7 @@ class _DashboardState extends State<Dashboard> {
     "Summary",
     "",
     "Favourite",
-    "History",
+    "Setting",
 
   ];
 
@@ -38,7 +39,7 @@ class _DashboardState extends State<Dashboard> {
     });
     // You can navigate or do something here
   }
-  List<Widget> pages=[TestPage(),SummaryPage(),HomePage(),Favouritepage(),HistoryPage(),];
+  List<Widget> pages=[TestPage(),SummaryPage(),HomePage(),Favouritepage(),SettingsScreen(),];
 
   @override
   Widget build(BuildContext context) {
@@ -52,8 +53,8 @@ class _DashboardState extends State<Dashboard> {
           child: Container(
             padding: EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: Colors.black12))
+                color: Colors.white,
+                border: Border(top: BorderSide(color: Colors.black12))
 
             ),
 
