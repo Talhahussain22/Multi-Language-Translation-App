@@ -39,7 +39,7 @@ class _DashboardState extends State<Dashboard> {
       top: false,
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F7FA),
-        body: IndexedStack(index: selectedIndex, children: _pages),
+        body: _pages[selectedIndex],
         bottomNavigationBar: _PremiumNavBar(
           items: _items,
           selectedIndex: selectedIndex,

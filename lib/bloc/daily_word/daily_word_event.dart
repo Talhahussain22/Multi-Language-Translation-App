@@ -3,13 +3,15 @@ part of 'daily_word_bloc.dart';
 abstract class DailyWordEvent {}
 
 class LoadDailyWord extends DailyWordEvent {
-  final String language;
-  LoadDailyWord(this.language);
+  final String nativeLanguage;
+  final String learningLanguage;
+  LoadDailyWord({required this.nativeLanguage, required this.learningLanguage});
 }
 
 class RefreshDailyWord extends DailyWordEvent {
-  final String language;
-  RefreshDailyWord(this.language);
+  final String nativeLanguage;
+  final String learningLanguage;
+  RefreshDailyWord({required this.nativeLanguage, required this.learningLanguage});
 }
 
 class SaveDailyWordToFavorites extends DailyWordEvent {

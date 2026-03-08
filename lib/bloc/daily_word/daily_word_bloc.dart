@@ -32,7 +32,8 @@ class DailyWordBloc extends Bloc<DailyWordEvent, DailyWordState> {
             currentStreak: 0,
             lastViewDate: DateTime.now(),
             longestStreak: 0,
-            learningLanguage: event.language,
+            learningLanguage: event.learningLanguage,
+            nativeLanguage: event.nativeLanguage,
           );
 
       // Update streak logic
@@ -45,25 +46,30 @@ class DailyWordBloc extends Bloc<DailyWordEvent, DailyWordState> {
       final today = DateTime(now.year, now.month, now.day);
       final difference = today.difference(lastDate).inDays;
 
-      if (difference == 1) {
-        // Visited yesterday - increase streak
+      if (streak.currentStreak == 0) {
+        // Brand-new streak – first ever visit
+        streak.currentStreak = 1;
+        streak.longestStreak = 1;
+      } else if (difference == 1) {
+        // Visited yesterday – increase streak
         streak.currentStreak++;
         if (streak.currentStreak > streak.longestStreak) {
           streak.longestStreak = streak.currentStreak;
         }
       } else if (difference > 1) {
-        // Missed days - reset streak
+        // Missed days – reset streak
         streak.currentStreak = 1;
       }
-      // If difference == 0, same day - do nothing
+      // If difference == 0, same day – do nothing (streak already >= 1)
 
       streak.lastViewDate = now;
-      streak.learningLanguage = event.language;
+      streak.learningLanguage = event.learningLanguage;
+      streak.nativeLanguage = event.nativeLanguage;
       await streakBox.put('streak', streak);
 
-      // Get all previous words for this language
+      // Get all previous words for this language pair
       final allWords = wordsBox.values
-          .where((w) => w.language == event.language)
+          .where((w) => w.language == event.learningLanguage)
           .toList()
         ..sort((a, b) => b.dateShown.compareTo(a.dateShown));
 
@@ -85,6 +91,7 @@ class DailyWordBloc extends Bloc<DailyWordEvent, DailyWordState> {
           antonyms: const [],
           dateShown: DateTime.now(),
           englishMeaning: '',
+          nativeLanguage: event.nativeLanguage,
         ),
       );
 
@@ -94,7 +101,8 @@ class DailyWordBloc extends Bloc<DailyWordEvent, DailyWordState> {
         // Fetch new word
         final previousWordIds = allWords.map((w) => w.wordId).toList();
         currentWord = await _dailyWordService.fetchDailyWord(
-          language: event.language,
+          nativeLanguage: event.nativeLanguage,
+          learningLanguage: event.learningLanguage,
           previousWordIds: previousWordIds,
         );
         await wordsBox.add(currentWord);
@@ -131,12 +139,13 @@ class DailyWordBloc extends Bloc<DailyWordEvent, DailyWordState> {
       try {
         final wordsBox = await Hive.openBox<DailyWordModel>('daily_words');
         final allWords = wordsBox.values
-            .where((w) => w.language == event.language)
+            .where((w) => w.language == event.learningLanguage)
             .toList();
         final previousWordIds = allWords.map((w) => w.wordId).toList();
 
         final newWord = await _dailyWordService.fetchDailyWord(
-          language: event.language,
+          nativeLanguage: event.nativeLanguage,
+          learningLanguage: event.learningLanguage,
           previousWordIds: previousWordIds,
         );
         await wordsBox.add(newWord);

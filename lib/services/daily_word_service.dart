@@ -4,9 +4,13 @@ import 'package:http/http.dart' as http;
 import '../model/daily_word_model.dart';
 
 class DailyWordService {
-  /// Fetches a new daily word for the specified language
+  /// Fetches a new daily word.
+  ///
+  /// • [learningLanguage] – the language the user wants to learn (word is in this language).
+  /// • [nativeLanguage]   – the language the user already knows (definition/meaning in this language).
   Future<DailyWordModel> fetchDailyWord({
-    required String language,
+    required String nativeLanguage,
+    required String learningLanguage,
     required List<String> previousWordIds,
   }) async {
     final apiKey = dotenv.env['OPENAI_API_KEY'] ?? dotenv.env['APIKEY'];
@@ -16,43 +20,43 @@ class DailyWordService {
 
     final prompt = '''You are a vocabulary teacher.
 
-Generate ONE DAILY WORD for a user who is learning: $language.
+The user already knows **$nativeLanguage** and is learning **$learningLanguage**.
 
-IMPORTANT:
-- The DAILY WORD itself MUST be in English.
-- The user is learning "$language", so meanings/translations should be in $language.
+Generate ONE useful daily vocabulary word **in $learningLanguage**.
 
-${previousWordIds.isNotEmpty ? 'DO NOT use these word IDs: ${previousWordIds.join(', ')}' : ''}
+${previousWordIds.isNotEmpty ? 'DO NOT reuse these word IDs: ${previousWordIds.join(', ')}' : ''}
 
 Requirements:
-- Pick an intermediate English word (not too easy, not too hard)
-- Provide a unique wordId (use the English word in lowercase with underscores)
-- Provide pronunciation (IPA) if available
-- Provide an English definition (clear and simple)
-- Provide "meaningInLearningLanguage" in $language (so the user understands the meaning in their learning language)
-- Provide 1 short example in English (MAX 10 WORDS)
-- Provide meaning of example that given in english sentence in learning language ($language) (MAX 10 WORDS) 
-- Provide 3-4 simple English synonyms
-- Provide 3-4 simple English antonyms
+- The DAILY WORD must be in $learningLanguage (the language the user is learning).
+- Provide a unique wordId (lowercase, underscores, based on the word).
+- Provide pronunciation (IPA or phonetic) of the word in $learningLanguage.
+- Provide a clear and simple definition of the word **in $nativeLanguage**.
+- Provide the meaning / translation of the word **in $nativeLanguage**.
+- Provide 1 short example sentence **in $learningLanguage** (MAX 10 words).
+- Provide the translation of that example **in $nativeLanguage** (MAX 10 words).
+- Provide 3-4 synonyms **in $learningLanguage**.
+- Provide 3-4 antonyms **in $learningLanguage**.
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON in this exact format (no markdown):
 {
-  "wordId": "persistent",
-  "word": "persistent",
-  "learningLanguage": "$language",
-  "meaningInLearningLanguage": "...",
-  "englishDefinition": "...",
-  "pronunciation": "/pərˈsɪstənt/",
-  "exampleEnglish": "She stayed persistent.",
-  "exampleLearningLanguage": "...",
-  "synonyms": ["determined", "tenacious", "steady"],
-  "antonyms": ["inconsistent", "wavering", "unreliable"]
+  "wordId": "example_word_id",
+  "word": "<word in $learningLanguage>",
+  "learningLanguage": "$learningLanguage",
+  "nativeLanguage": "$nativeLanguage",
+  "definitionInNative": "<clear definition in $nativeLanguage>",
+  "meaningInNative": "<short meaning/translation in $nativeLanguage>",
+  "pronunciation": "<IPA or phonetic>",
+  "exampleInLearning": "<short example in $learningLanguage>",
+  "exampleInNative": "<translation of example in $nativeLanguage>",
+  "synonyms": ["syn1", "syn2", "syn3"],
+  "antonyms": ["ant1", "ant2", "ant3"]
 }
 
 Rules:
-- BOTH examples MUST be 10 words or less.
-- Do not return markdown.
-- Do not add extra keys.
+- Both examples MUST be 10 words or less.
+- Pick an intermediate-level word (not too easy, not too hard).
+- Do NOT return markdown, only raw JSON.
+- Do NOT add extra keys.
 ''';
 
     final url = Uri.parse('https://api.openai.com/v1/chat/completions');
@@ -89,7 +93,8 @@ Rules:
         // Clean markdown formatting if present
         String cleanContent = content.trim();
         if (cleanContent.startsWith('```')) {
-          cleanContent = cleanContent.replaceAll(RegExp(r'```json|```'), '').trim();
+          cleanContent =
+              cleanContent.replaceAll(RegExp(r'```json|```'), '').trim();
         }
 
         final wordJson = jsonDecode(cleanContent);
@@ -97,17 +102,25 @@ Rules:
         return DailyWordModel(
           wordId: (wordJson['wordId'] ?? '').toString(),
           word: (wordJson['word'] ?? '').toString(),
-          language: (wordJson['learningLanguage'] ?? language).toString(),
-          // Meaning/translation shown in the user's learning language
-          translation: (wordJson['meaningInLearningLanguage'] ?? '').toString(),
-          // Definition stays English
-          englishMeaning: (wordJson['englishDefinition'] ?? '').toString(),
+          language:
+              (wordJson['learningLanguage'] ?? learningLanguage).toString(),
+          nativeLanguage:
+              (wordJson['nativeLanguage'] ?? nativeLanguage).toString(),
+          // Meaning in the user's native language
+          translation: (wordJson['meaningInNative'] ?? '').toString(),
+          // Definition in the user's native language
+          englishMeaning: (wordJson['definitionInNative'] ?? '').toString(),
           pronunciation: wordJson['pronunciation']?.toString(),
-          exampleSentenceEnglish: (wordJson['exampleEnglish'] ?? '').toString(),
+          // Example in the learning language
+          exampleSentenceEnglish:
+              (wordJson['exampleInLearning'] ?? '').toString(),
+          // Example in the native language
           exampleSentenceLearning:
-              (wordJson['exampleLearningLanguage'] ?? '').toString(),
-          synonyms: List<String>.from((wordJson['synonyms'] ?? const []).map((e) => e.toString())),
-          antonyms: List<String>.from((wordJson['antonyms'] ?? const []).map((e) => e.toString())),
+              (wordJson['exampleInNative'] ?? '').toString(),
+          synonyms: List<String>.from(
+              (wordJson['synonyms'] ?? const []).map((e) => e.toString())),
+          antonyms: List<String>.from(
+              (wordJson['antonyms'] ?? const []).map((e) => e.toString())),
           dateShown: DateTime.now(),
         );
       } else {

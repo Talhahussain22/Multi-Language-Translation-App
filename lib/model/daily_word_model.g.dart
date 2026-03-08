@@ -29,13 +29,14 @@ class DailyWordModelAdapter extends TypeAdapter<DailyWordModel> {
       antonyms:                (fields[8]  as List?)?.cast<String>() ?? const [],
       dateShown:               fields[9]  as DateTime? ?? DateTime.now(),
       englishMeaning:          fields[10] as String? ?? '',
+      nativeLanguage:          fields[11] as String? ?? 'English',
     );
   }
 
   @override
   void write(BinaryWriter writer, DailyWordModel obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.wordId)
       ..writeByte(1)
@@ -57,7 +58,9 @@ class DailyWordModelAdapter extends TypeAdapter<DailyWordModel> {
       ..writeByte(9)
       ..write(obj.dateShown)
       ..writeByte(10)
-      ..write(obj.englishMeaning);
+      ..write(obj.englishMeaning)
+      ..writeByte(11)
+      ..write(obj.nativeLanguage ?? 'English');
   }
 
   @override
@@ -86,13 +89,14 @@ class DailyWordStreakAdapter extends TypeAdapter<DailyWordStreak> {
       lastViewDate: fields[1] as DateTime,
       longestStreak: fields[2] as int,
       learningLanguage: fields[3] as String,
+      nativeLanguage: fields[4] as String? ?? 'English',
     );
   }
 
   @override
   void write(BinaryWriter writer, DailyWordStreak obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.currentStreak)
       ..writeByte(1)
@@ -100,7 +104,9 @@ class DailyWordStreakAdapter extends TypeAdapter<DailyWordStreak> {
       ..writeByte(2)
       ..write(obj.longestStreak)
       ..writeByte(3)
-      ..write(obj.learningLanguage);
+      ..write(obj.learningLanguage)
+      ..writeByte(4)
+      ..write(obj.nativeLanguage);
   }
 
   @override

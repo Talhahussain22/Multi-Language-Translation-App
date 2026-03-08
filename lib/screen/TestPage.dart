@@ -47,7 +47,7 @@ class TestPage extends StatelessWidget {
         slivers: [
           // ── Premium SliverAppBar ──────────────────────────────────────────
           SliverAppBar(
-            expandedHeight: 180,
+            expandedHeight: 230,
             pinned: true,
             backgroundColor: _primary,
             flexibleSpace: FlexibleSpaceBar(
@@ -65,7 +65,7 @@ class TestPage extends StatelessWidget {
                     Positioned(
                       top: -30, right: -30,
                       child: Container(
-                        width: 140, height: 140,
+                        width: 160, height: 160,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: Colors.white.withValues(alpha: 0.04),
@@ -75,50 +75,75 @@ class TestPage extends StatelessWidget {
                     Positioned(
                       bottom: -20, left: -20,
                       child: Container(
-                        width: 100, height: 100,
+                        width: 110, height: 110,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: _accent.withValues(alpha: 0.08),
                         ),
                       ),
                     ),
+                    Positioned(
+                      top: 60, right: 20,
+                      child: Container(
+                        width: 60, height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.03),
+                        ),
+                      ),
+                    ),
                     // Content
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
+                      padding: const EdgeInsets.fromLTRB(20, 56, 20, 20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
+                          // Icon + label row
                           Row(
                             children: [
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: _accent.withValues(alpha: 0.18),
+                                  color: _accent.withValues(alpha: 0.20),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: const Icon(Icons.psychology_rounded,
-                                    color: _accent, size: 22),
+                                    color: _accent, size: 20),
                               ),
-                              const SizedBox(width: 12),
-                              const Text(
-                                'Language Tests',
+                              const SizedBox(width: 10),
+                              Text(
+                                'VOCABULARY & GRAMMAR',
                                 style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.5,
+                                  color: _accent.withValues(alpha: 0.9),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.2,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Challenge yourself and track your progress',
+                          const SizedBox(height: 10),
+                          // Bold headline
+                          const Text(
+                            'Test Your\nLanguage Skills',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.6),
-                              fontSize: 13,
+                              color: Colors.white,
+                              fontSize: 26,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                              height: 1.15,
                             ),
+                          ),
+                          const SizedBox(height: 12),
+                          // Stat chips row
+                          Wrap(
+                            spacing: 8,
+                            children: [
+                              _StatChip(label: '3 Test Types', icon: Icons.category_rounded),
+                              _StatChip(label: 'AI Powered', icon: Icons.auto_awesome_rounded),
+                              _StatChip(label: 'Multi-Language', icon: Icons.language_rounded),
+                            ],
                           ),
                         ],
                       ),
@@ -369,3 +394,40 @@ class _TestCardData {
     required this.gradientEnd,
   });
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Small pill chip used in the hero banner
+// ─────────────────────────────────────────────────────────────────────────────
+class _StatChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  const _StatChip({required this.label, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: Colors.white.withValues(alpha: 0.85)),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.white.withValues(alpha: 0.85),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

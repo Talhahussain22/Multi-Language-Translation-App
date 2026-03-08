@@ -7,11 +7,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 import 'TestResultScreen.dart';
-import 'components/optioncontainer.dart';
+import 'components/quiz_option_tile.dart';
 
 class FavouriteWordsQuizScreen extends StatefulWidget {
-  List<FavoriteWord> words;
-  FavouriteWordsQuizScreen({super.key, required this.words});
+  final List<FavoriteWord> words;
+  const FavouriteWordsQuizScreen({super.key, required this.words});
 
   @override
   State<FavouriteWordsQuizScreen> createState() =>
@@ -27,6 +27,7 @@ class _FavouriteWordsQuizScreenState extends State<FavouriteWordsQuizScreen> {
   int correctAnswers = 0;
   String? correctOption;
   int? totalMcqs;
+  bool _submitted = false;
 
   @override
   void initState() {
@@ -45,11 +46,12 @@ class _FavouriteWordsQuizScreenState extends State<FavouriteWordsQuizScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         backgroundColor: const Color.fromRGBO(0, 51, 102, 1),
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
-          'Quiz',
+          'Favourite Quiz',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         leading: IconButton(
@@ -150,159 +152,337 @@ class _FavouriteWordsQuizScreenState extends State<FavouriteWordsQuizScreen> {
             );
           } else if (state is FavouriteQuizLoadedState) {
             final data = state.mcqs;
-            if (data == null) return Container();
+            if (data == null || data.isEmpty) {
+              return const Center(child: Text('No questions available.'));
+            }
 
-            correctOption = data[mcqsNumber].correctAnswer;
+            // Keep total in sync with generated list.
+            totalMcqs = data.length;
+            final question = data[mcqsNumber];
+            correctOption = question.correctAnswer;
 
-            return SingleChildScrollView(
-              child: Center(
-                child: selectedOption == null
-                    ? _buildQuestionColumn(data, null)
-                    : selectedOption == data[mcqsNumber].correctAnswer
-                        ? _buildQuestionColumn(data, true)
-                        : _buildQuestionColumn(data, false),
-              ),
+            final progress = totalMcqs == 0 ? 0.0 : (mcqsNumber + 1) / totalMcqs!;
+
+            return Column(
+              children: [
+                _buildTopProgress(progress),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 14),
+                        _buildScorePill(),
+                        const SizedBox(height: 12),
+                        _buildQuestionCard(question),
+                        const SizedBox(height: 6),
+                        if (_submitted)
+                          _buildFeedbackBanner(
+                            isCorrect: selectedOption == question.correctAnswer,
+                            correctAnswer: question.correctAnswer,
+                          ),
+                        const SizedBox(height: 6),
+                        ...question.options.map((opt) {
+                          final optValue = opt.native;
+                          final isSelected = selectedOption == optValue;
+
+                          final bool isCorrect = _submitted && optValue == question.correctAnswer;
+                          final bool isWrong = _submitted && isSelected && optValue != question.correctAnswer;
+
+                          return QuizOptionTile(
+                            text: _optionLabel(opt),
+                            isSelected: isSelected,
+                            isCorrect: isCorrect,
+                            isWrong: isWrong,
+                            onTap: _submitted
+                                ? null
+                                : () {
+                                    setState(() {
+                                      selectedOption = optValue;
+                                    });
+                                  },
+                          );
+                        }),
+                        const SizedBox(height: 90),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             );
           }
 
-          return Container();
+          return const SizedBox.shrink();
         },
       ),
-      floatingActionButton: BlocBuilder<FavouriteQuizBloc, FavouriteQuizState>(
+      bottomNavigationBar: BlocBuilder<FavouriteQuizBloc, FavouriteQuizState>(
         builder: (context, state) {
-          if (state is FavouriteQuizLoadedState && totalMcqs != null) {
-            final data = state.mcqs;
-            final hasQuestions = (data != null && data.isNotEmpty);
-            if (!hasQuestions) return const SizedBox.shrink();
+          if (state is! FavouriteQuizLoadedState) return const SizedBox.shrink();
+          final data = state.mcqs;
+          if (data == null || data.isEmpty) return const SizedBox.shrink();
 
-            final isLast = (mcqsNumber + 1) >= totalMcqs!;
-            final canProceed =
-                selectedOption != null && selectedOption!.isNotEmpty;
+          totalMcqs = data.length;
+          final isLast = (mcqsNumber + 1) >= totalMcqs!;
+          final canSubmit = selectedOption != null && selectedOption!.isNotEmpty && !_submitted;
+          final canNext = _submitted;
 
-            return Padding(
-              padding: const EdgeInsets.only(left: 30, right: 5),
-              child: GestureDetector(
-                onTap: !canProceed
-                    ? null
-                    : () async {
+          return SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 18,
+                    offset: const Offset(0, -6),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
                         setState(() {
-                          if (selectedOption == correctOption) {
-                            correctAnswers++;
-                          }
                           selectedOption = null;
-                          if (!isLast) {
-                            mcqsNumber++;
-                          }
+                          _submitted = false;
                         });
-                        if (isLast) {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => TestResultScreen(
-                                correctAnswers: correctAnswers,
-                                totalScore: totalMcqs!,
-                              ),
-                            ),
-                          );
-                        }
                       },
-                child: Opacity(
-                  opacity: canProceed ? 1 : 0.6,
-                  child: Container(
-                    width: double.infinity,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: const Color.fromRGBO(0, 51, 102, 1),
-                      borderRadius: BorderRadius.circular(30),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text('Reset'),
                     ),
-                    child: Center(
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: canSubmit
+                          ? () {
+                              setState(() {
+                                _submitted = true;
+                                if (selectedOption == correctOption) {
+                                  correctAnswers++;
+                                }
+                              });
+                            }
+                          : canNext
+                              ? () {
+                                  if (isLast) {
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => TestResultScreen(
+                                          correctAnswers: correctAnswers,
+                                          totalScore: totalMcqs!,
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  setState(() {
+                                    mcqsNumber++;
+                                    selectedOption = null;
+                                    _submitted = false;
+                                  });
+                                }
+                              : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromRGBO(0, 51, 102, 1),
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: Colors.grey.shade300,
+                        disabledForegroundColor: Colors.grey.shade600,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
                       child: Text(
-                        isLast ? 'Check Result' : 'Next',
+                        canSubmit
+                            ? 'Submit'
+                            : isLast
+                                ? 'Finish'
+                                : 'Next',
                         style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
-            );
-          }
-          return const SizedBox.shrink();
+            ),
+          );
         },
       ),
     );
   }
 
-  // ──────────────────────────────────────────────
-  // Build question column
-  // answerRevealed: null = not answered, true = correct, false = wrong
-  // ──────────────────────────────────────────────
-  Widget _buildQuestionColumn(List<MCQQuestion> data, bool? answerRevealed) {
-    final question = data[mcqsNumber];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 20),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15),
-          child: Text('${mcqsNumber + 1}/$totalMcqs'),
-        ),
-        const SizedBox(height: 5),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15),
-          child: LinearProgressIndicator(
-            value: (mcqsNumber + 1) / totalMcqs!,
-            minHeight: 10,
-            borderRadius: BorderRadius.circular(30),
-            color: const Color.fromRGBO(0, 51, 102, 1),
+  Widget _buildTopProgress(double value) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Question ${mcqsNumber + 1}/${totalMcqs ?? 0}',
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              const Spacer(),
+              Text(
+                '${(value * 100).round()}%',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 40),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Text(
-            "What does '${question.question}' mean?",
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: value,
+              minHeight: 10,
+              backgroundColor: Colors.grey.shade200,
+              color: const Color.fromRGBO(0, 51, 102, 1),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScorePill() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: const Color.fromRGBO(0, 51, 102, 0.06),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color.fromRGBO(0, 51, 102, 0.15)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.stars,
+              size: 18, color: Color.fromRGBO(0, 51, 102, 1)),
+          const SizedBox(width: 8),
+          Text(
+            'Score: $correctAnswers',
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              color: Color.fromRGBO(0, 51, 102, 1),
+            ),
+          ),
+          const Spacer(),
+          Text(
+            _submitted
+                ? 'Answer checked'
+                : (selectedOption == null ? 'Pick an option' : 'Ready to submit'),
             style: TextStyle(
-              color: Colors.grey.shade900,
+              fontWeight: FontWeight.w700,
+              color: Colors.grey.shade700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuestionCard(MCQQuestion question) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.grey.shade200, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          )
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            'What does this mean?',
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            question.question,
+            style: const TextStyle(
               fontSize: 30,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w900,
+              color: Color.fromRGBO(0, 51, 102, 1),
             ),
             textAlign: TextAlign.center,
           ),
-        ),
-        // Options
-        ...question.options.map((opt) {
-          final Color color;
-          if (answerRevealed == null) {
-            color = const Color.fromRGBO(0, 51, 102, 1);
-          } else if (answerRevealed) {
-            // correct answer chosen
-            color = opt.native == selectedOption ? Colors.green : const Color.fromRGBO(0, 51, 102, 1);
-          } else {
-            // wrong answer chosen
-            color = opt.native == question.correctAnswer
-                ? Colors.green
-                : Colors.red;
-          }
+        ],
+      ),
+    );
+  }
 
-          return answerRevealed == null
-              ? GestureDetector(
-                  onTap: () => setState(() => selectedOption = opt.native),
-                  child: OptionsContainer(
-                    text: _optionLabel(opt),
-                    color: color,
-                  ),
-                )
-              : OptionsContainer(
-                  text: _optionLabel(opt),
-                  color: color,
-                );
-        }),
-      ],
+  Widget _buildFeedbackBanner({
+    required bool isCorrect,
+    required String correctAnswer,
+  }) {
+    final bg = isCorrect ? Colors.green.shade50 : Colors.red.shade50;
+    final border = isCorrect ? Colors.green.shade200 : Colors.red.shade200;
+    final icon = isCorrect ? Icons.check_circle : Icons.info;
+    final title = isCorrect ? 'Correct!' : 'Not quite';
+    final subtitle = isCorrect ? 'Nice work.' : 'Correct answer: $correctAnswer';
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: isCorrect ? Colors.green : Colors.red),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+                const SizedBox(height: 2),
+                Text(subtitle, style: TextStyle(color: Colors.grey.shade800)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

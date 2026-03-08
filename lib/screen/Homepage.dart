@@ -45,10 +45,17 @@ class _HomePageState extends State<HomePage> {
         .firstWhere((item) => item['label'] == toLanguage);
   }
 
+  /// Guards against ghost taps from the splash-screen transition.
+  bool _tapsReady = false;
+
   @override
   void initState() {
     setLanguages();
     super.initState();
+    // Absorb any residual touch events from the incoming route transition
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) setState(() => _tapsReady = true);
+    });
   }
 
   @override
@@ -60,32 +67,68 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: Color.fromRGBO(0, 51, 102, 1),
-        title: Text(
-          'Language Translator',
-          style: TextStyle(color: Colors.white),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF001A40), Color(0xFF003366)],
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF6B35).withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.translate_rounded,
+                  color: Color(0xFFFF6B35), size: 18),
+            ),
+            const SizedBox(width: 10),
+            RichText(
+              text: const TextSpan(
+                children: [
+                  TextSpan(
+                    text: 'Lang',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 20,
+                    ),
+                  ),
+                  TextSpan(
+                    text: 'Rush',
+                    style: TextStyle(
+                      color: Color(0xFFFF6B35),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 20,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         centerTitle: true,
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            onSelected: (value) {
-              if (value == 'history') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => HistoryPage()),
-                );
-              }
+          IconButton(
+            icon: const Icon(Icons.history_rounded, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => HistoryPage()),
+              );
             },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 'history',
-                child: Text('History'),
-              ),
-            ],
           ),
         ],
+        elevation: 0,
       ),
       body: BlocConsumer<OnTranslateBloc, OnTranslateState>(
         listener: (context, state) {
@@ -135,6 +178,7 @@ class _HomePageState extends State<HomePage> {
                                     flag: fromselectedLanguage?['flag'] ?? '',
                                     label: fromLanguage ?? '',
                                     onTap: () async {
+                                        if (!_tapsReady) return;
                                       final picked = await showLanguagePicker(
                                         context: context,
                                         languages: LanguageProvider.LANGUAGES,
@@ -185,6 +229,7 @@ class _HomePageState extends State<HomePage> {
                                     flag: toselectedLanguage?['flag'] ?? '',
                                     label: toLanguage ?? '',
                                     onTap: () async {
+                                        if (!_tapsReady) return;
                                       final picked = await showLanguagePicker(
                                         context: context,
                                         languages: LanguageProvider.LANGUAGES,
@@ -684,16 +729,18 @@ class _LanguageChip extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(30),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        // Consistent padding: enough vertical space to fill the 56px bar gracefully
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,  // centre content in its half
           children: [
-            Text(flag, style: const TextStyle(fontSize: 18)),
+            Text(flag, style: const TextStyle(fontSize: 20)),
             const SizedBox(width: 6),
             Flexible(
               child: Text(
                 label,
                 overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -701,11 +748,11 @@ class _LanguageChip extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 2),
+            const SizedBox(width: 3),
             const Icon(
               Icons.keyboard_arrow_down_rounded,
               size: 16,
-              color: Color.fromRGBO(0, 51, 102, 0.6),
+              color: Color.fromRGBO(0, 51, 102, 0.55),
             ),
           ],
         ),
@@ -713,3 +760,4 @@ class _LanguageChip extends StatelessWidget {
     );
   }
 }
+

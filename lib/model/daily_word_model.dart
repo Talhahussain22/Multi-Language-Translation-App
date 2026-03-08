@@ -10,18 +10,22 @@ class DailyWordModel extends HiveObject {
   @HiveField(1)
   final String word;
 
+  /// The target/learning language (e.g. "Spanish")
   @HiveField(2)
   final String language;
 
+  /// Meaning/translation shown in the user's native language
   @HiveField(3)
   final String translation;
 
   @HiveField(4)
   final String? pronunciation;
 
+  /// Example sentence in the learning language
   @HiveField(5)
   final String exampleSentenceEnglish;
 
+  /// Example sentence in the native language
   @HiveField(6)
   final String exampleSentenceLearning;
 
@@ -34,8 +38,13 @@ class DailyWordModel extends HiveObject {
   @HiveField(9)
   final DateTime dateShown;
 
+  /// Definition in the native language
   @HiveField(10)
   final String englishMeaning;
+
+  /// The user's native/known language (e.g. "English")
+  @HiveField(11)
+  final String? nativeLanguage;
 
   DailyWordModel({
     required this.wordId,
@@ -49,6 +58,7 @@ class DailyWordModel extends HiveObject {
     required this.antonyms,
     required this.dateShown,
     required this.englishMeaning,
+    this.nativeLanguage = 'English',
   });
 
   Map<String, dynamic> toJson() => {
@@ -63,6 +73,7 @@ class DailyWordModel extends HiveObject {
         'antonyms': antonyms,
         'dateShown': dateShown.toIso8601String(),
         'englishMeaning': englishMeaning,
+        'nativeLanguage': nativeLanguage,
       };
 
   factory DailyWordModel.fromJson(Map<String, dynamic> json) => DailyWordModel(
@@ -77,6 +88,7 @@ class DailyWordModel extends HiveObject {
         antonyms: List<String>.from(json['antonyms']),
         dateShown: DateTime.parse(json['dateShown']),
         englishMeaning: json['englishMeaning'] ?? '',
+        nativeLanguage: (json['nativeLanguage'] as String?) ?? 'English',
       );
 }
 
@@ -94,10 +106,15 @@ class DailyWordStreak extends HiveObject {
   @HiveField(3)
   String learningLanguage;
 
+  /// The user's native/known language
+  @HiveField(4)
+  String nativeLanguage;
+
   DailyWordStreak({
     required this.currentStreak,
     required this.lastViewDate,
     required this.longestStreak,
     required this.learningLanguage,
+    this.nativeLanguage = 'English',
   });
 }
