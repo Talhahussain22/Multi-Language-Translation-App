@@ -3,14 +3,20 @@ part of 'generalquiz_bloc.dart';
 @immutable
 sealed class GeneralquizState {}
 
-final class GeneralquizInitial extends GeneralquizState {}
+final class GeneralquizInitial extends GeneralquizState {
+  GeneralquizInitial();
+}
 
-final class GeneralQuizLoadingState extends GeneralquizState{}
-final class GeneralQuizLoadedState extends GeneralquizState{
-  List<MCQQuestion>? mcqs;
+final class GeneralQuizLoadingState extends GeneralquizState {
+  GeneralQuizLoadingState();
+}
+
+final class GeneralQuizLoadedState extends GeneralquizState {
+  final List<MCQQuestion>? mcqs;
   GeneralQuizLoadedState({required this.mcqs});
 }
-final class GeneralQuizErrorState extends GeneralquizState{
-  String? error;
+
+final class GeneralQuizErrorState extends GeneralquizState {
+  final String? error;
   GeneralQuizErrorState({required this.error});
 }

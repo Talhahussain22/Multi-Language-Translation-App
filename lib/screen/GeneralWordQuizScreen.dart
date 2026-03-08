@@ -4,14 +4,15 @@ import 'package:ai_text_to_speech/screen/TestResultScreen.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+
+import '../Utils/app_dialogs.dart';
 
 class GeneralWordQuizScreen extends StatefulWidget {
-  String selectedfromLanguage;
-  String selectedtoLanguage;
-  String selecteddifficultyLevel;
-  String selectedMcqsCount;
-  GeneralWordQuizScreen({
+  final String selectedfromLanguage;
+  final String selectedtoLanguage;
+  final String selecteddifficultyLevel;
+  final String selectedMcqsCount;
+  const GeneralWordQuizScreen({
     super.key,
     required this.selectedfromLanguage,
     required this.selectedtoLanguage,
@@ -86,19 +87,34 @@ class _GeneralWordQuizScreenState extends State<GeneralWordQuizScreen> {
       body: BlocBuilder<GeneralquizBloc, GeneralquizState>(
         builder: (context, state) {
           if (state is GeneralQuizErrorState) {
-            Fluttertoast.showToast(
-              msg: state.error.toString(),
-              toastLength: Toast.LENGTH_SHORT,
-              gravity: ToastGravity.CENTER,
-              backgroundColor: _primary,
-              textColor: Colors.white,
-              fontSize: 16.0,
-            );
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              Future.delayed(const Duration(seconds: 2), () {
-                if (mounted) Navigator.pop(context);
-              });
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              bool retried = false;
+              await AppDialogs.showErrorDialog(
+                context,
+                title: 'Quiz couldn’t load',
+                message: AppDialogs.prettyError(state.error.toString()),
+                onRetry: () {
+                  retried = true;
+                  context.read<GeneralquizBloc>().add(
+                        GeneralQuizStartButtonPressesd(
+                          fromLang: widget.selectedfromLanguage,
+                          toLang: widget.selectedtoLanguage,
+                          difficulty: widget.selecteddifficultyLevel,
+                          numberofQuiz: widget.selectedMcqsCount,
+                        ),
+                      );
+                },
+                showExit: true,
+                exitLabel: 'Exit',
+                retryLabel: 'Retry',
+              );
+
+              // If user didn't retry, exit the quiz screen.
+              if (!retried && mounted) {
+                Navigator.pop(context);
+              }
             });
+            return const SizedBox.shrink();
           }
 
           if (state is GeneralQuizLoadingState) {

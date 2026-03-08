@@ -35,6 +35,9 @@ class _SplashScreenState extends State<SplashScreen>
   static const _accent   = Color(0xFFFF6B35);   // vibrant orange
   static const _gold     = Color(0xFFFFD700);   // gold highlight
 
+  Timer? _textDelayTimer;
+  Timer? _navigateTimer;
+
   @override
   void initState() {
     super.initState();
@@ -86,7 +89,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     // ── Sequence ───────────────────────────────────────────────────────
     _logoController.forward();
-    Future.delayed(const Duration(milliseconds: 500), () {
+    _textDelayTimer = Timer(const Duration(milliseconds: 500), () {
       if (mounted) {
         _textController.forward();
         _progressController.forward();
@@ -94,7 +97,7 @@ class _SplashScreenState extends State<SplashScreen>
     });
 
     // Navigate after animations complete
-    Future.delayed(const Duration(milliseconds: 3200), () {
+    _navigateTimer = Timer(const Duration(milliseconds: 3200), () {
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -113,6 +116,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
+    _textDelayTimer?.cancel();
+    _navigateTimer?.cancel();
     _logoController.dispose();
     _textController.dispose();
     _progressController.dispose();

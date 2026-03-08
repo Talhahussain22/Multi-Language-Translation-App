@@ -1,11 +1,11 @@
 import 'package:ai_text_to_speech/bloc/grammarTestBloc/grammar_test_bloc.dart';
-import 'package:ai_text_to_speech/model/gemini_response_model.dart';
 import 'package:ai_text_to_speech/screen/TestResultScreen.dart';
 import 'package:ai_text_to_speech/screen/components/optioncontainer.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+
+import '../Utils/app_dialogs.dart';
 
 class GrammarQuizScreen extends StatefulWidget {
   final String language;
@@ -110,21 +110,29 @@ class _GrammarQuizScreenState extends State<GrammarQuizScreen> {
       body: BlocBuilder<GrammarTestBloc, GrammarTestState>(
         builder: (context, state) {
           if (state is GrammarTestError) {
-            Fluttertoast.showToast(
-              msg: state.error,
-              toastLength: Toast.LENGTH_SHORT,
-              gravity: ToastGravity.CENTER,
-              timeInSecForIosWeb: 1,
-              backgroundColor: const Color.fromRGBO(0, 51, 102, 1),
-              textColor: Colors.white,
-              fontSize: 16.0,
-            );
-
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              Future.delayed(const Duration(seconds: 2), () {
-                Navigator.pop(context);
-              });
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              bool retried = false;
+              await AppDialogs.showErrorDialog(
+                context,
+                title: 'Practice couldn’t load',
+                message: AppDialogs.prettyError(state.error),
+                onRetry: () {
+                  retried = true;
+                  context.read<GrammarTestBloc>().add(
+                        GrammarTestStarted(
+                          language: widget.language,
+                          testType: widget.testType,
+                          count: widget.totalQuestions.toString(),
+                        ),
+                      );
+                },
+                showExit: true,
+                exitLabel: 'Exit',
+                retryLabel: 'Retry',
+              );
+              if (!retried && mounted) Navigator.pop(context);
             });
+            return const SizedBox.shrink();
           } else if (state is GrammarTestLoading) {
             return Center(
               child: AnimatedTextKit(

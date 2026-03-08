@@ -4,8 +4,8 @@ import 'package:ai_text_to_speech/model/hive_model.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 
+import '../Utils/app_dialogs.dart';
 import 'TestResultScreen.dart';
 import 'components/quiz_option_tile.dart';
 
@@ -28,6 +28,7 @@ class _FavouriteWordsQuizScreenState extends State<FavouriteWordsQuizScreen> {
   String? correctOption;
   int? totalMcqs;
   bool _submitted = false;
+  bool _errorDialogShowing = false;
 
   @override
   void initState() {
@@ -42,6 +43,36 @@ class _FavouriteWordsQuizScreenState extends State<FavouriteWordsQuizScreen> {
   // Helper: display label for an MCQOption
   // ──────────────────────────────────────────────
   String _optionLabel(MCQOption opt) => opt.label;
+
+  Future<void> _showErrorDialog(String rawError) async {
+    if (_errorDialogShowing || !mounted) return;
+    _errorDialogShowing = true;
+
+    final msg = AppDialogs.prettyError(rawError);
+
+    await AppDialogs.showErrorDialog(
+      context,
+      title: 'Quiz couldn’t load',
+      message: msg,
+      onRetry: () {
+        if (!mounted) return;
+        setState(() {
+          selectedOption = null;
+          _submitted = false;
+          mcqsNumber = 0;
+          correctAnswers = 0;
+        });
+        context
+            .read<FavouriteQuizBloc>()
+            .add(OnFavouriteQuizStartButtonPressed(words: widget.words));
+      },
+      showExit: true,
+      exitLabel: 'Exit',
+      retryLabel: 'Retry',
+    );
+
+    _errorDialogShowing = false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,20 +151,7 @@ class _FavouriteWordsQuizScreenState extends State<FavouriteWordsQuizScreen> {
       body: BlocBuilder<FavouriteQuizBloc, FavouriteQuizState>(
         builder: (context, state) {
           if (state is FavouriteQuizErrorState) {
-            Fluttertoast.showToast(
-              msg: state.error.toString(),
-              toastLength: Toast.LENGTH_SHORT,
-              gravity: ToastGravity.CENTER,
-              timeInSecForIosWeb: 1,
-              backgroundColor: const Color.fromRGBO(0, 51, 102, 1),
-              textColor: Colors.white,
-              fontSize: 16.0,
-            );
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              Future.delayed(const Duration(seconds: 2), () {
-                if (mounted) Navigator.pop(context);
-              });
-            });
+            _showErrorDialog(state.error.toString());
           } else if (state is FavouriteQuizLoadingState) {
             return Center(
               child: AnimatedTextKit(
