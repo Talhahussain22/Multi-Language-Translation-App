@@ -1,7 +1,7 @@
-
 import 'package:ai_text_to_speech/data/languagedata.dart';
 import 'package:ai_text_to_speech/screen/GeneralWordQuizScreen.dart';
-import 'package:ai_text_to_speech/screen/components/CustomDropDown.dart';
+import 'package:ai_text_to_speech/screen/components/language_picker_sheet.dart';
+import 'package:ai_text_to_speech/services/ad_manager.dart';
 import 'package:flutter/material.dart';
 
 class GeneralTestScreen extends StatefulWidget {
@@ -12,174 +12,502 @@ class GeneralTestScreen extends StatefulWidget {
 }
 
 class _GeneralTestScreenState extends State<GeneralTestScreen> {
-  List<String> items = [];
-  late String selectedfromLanguage;
-  late String selectedtoLanguage;
-  String selecteddifficultyLevel = 'Easy';
-  String selectedMcqsCount = '10';
-  List<String> difficultyLevel = ['Easy', 'Low Medium', 'Medium', 'High'];
-  List<String> mcqsCount = ['10', '20', '30', '40', '50'];
+  static const _primary = Color.fromRGBO(0, 51, 102, 1);
+
+  // ── All languages including English for the quiz ──
+  final List<Map<String, String>> _allLanguages = LanguageProvider.LANGUAGES;
+
+  late Map<String, String> _selectedLanguage;
+  String _difficulty = 'Easy';
+  String _count = '10';
+  final _adManager = AdManager();
+
+  final List<Map<String, dynamic>> _difficulties = [
+    {'label': 'Easy', 'icon': '🌱', 'desc': 'Common everyday words'},
+    {'label': 'Low Medium', 'icon': '📗', 'desc': 'Familiar vocabulary'},
+    {'label': 'Medium', 'icon': '📘', 'desc': 'Less common words'},
+    {'label': 'High', 'icon': '🎯', 'desc': 'Rare & academic words'},
+  ];
+
+  final List<String> _counts = ['5', '10', '15', '20', '30'];
+
+  bool get _isEnglishMode =>
+      _selectedLanguage['label']?.toLowerCase() == 'english';
 
   @override
   void initState() {
-    items =
-        LanguageProvider.LANGUAGES.map((item) => item['label'] ?? '').toList();
-    selectedfromLanguage = items.first;
-    selectedtoLanguage = items[20];
-
     super.initState();
+    // Default to first non-English language
+    _selectedLanguage = _allLanguages.firstWhere(
+      (l) => l['label']?.toLowerCase() != 'english',
+      orElse: () => _allLanguages.first,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _adManager.ensureAdsPreloaded();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: Color.fromRGBO(0, 51, 102, 1),
-        iconTheme: IconThemeData(color: Colors.white),
-        title: Text(
-          'General Words',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        backgroundColor: _primary,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text(
+          'General Words Quiz',
+          style: TextStyle(
+              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
         ),
         centerTitle: true,
+        elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 15),
-              Text(
-                'From Language',
-                style: TextStyle(
-                  color: Colors.grey.shade800,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 18,
-                  letterSpacing: 0,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            // ── Language to learn ───────────────────────────────────────────
+            _SectionHeader(
+              icon: Icons.translate_rounded,
+              label: 'Language to Learn',
+            ),
+            const SizedBox(height: 10),
+            _LanguageSelectorCard(
+              language: _selectedLanguage,
+              onTap: () => _pickLanguage(),
+            ),
+
+            const SizedBox(height: 22),
+
+            // ── Difficulty ──────────────────────────────────────────────────
+            _SectionHeader(
+              icon: Icons.bar_chart_rounded,
+              label: 'Difficulty Level',
+            ),
+            const SizedBox(height: 10),
+            ...(_difficulties.map((d) => _DifficultyTile(
+                  label: d['label'] as String,
+                  icon: d['icon'] as String,
+                  desc: d['desc'] as String,
+                  selected: _difficulty == d['label'],
+                  onTap: () => setState(() => _difficulty = d['label']),
+                ))),
+
+            const SizedBox(height: 22),
+
+            // ── Number of questions ─────────────────────────────────────────
+            _SectionHeader(
+              icon: Icons.quiz_rounded,
+              label: 'Number of Questions',
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 46,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: _counts
+                    .map((c) => _CountChip(
+                          count: c,
+                          selected: _count == c,
+                          onTap: () => setState(() => _count = c),
+                        ))
+                    .toList(),
+              ),
+            ),
+
+            const SizedBox(height: 36),
+
+            // ── Start button ────────────────────────────────────────────────
+            SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton(
+                onPressed: _startQuiz,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 4,
+                  shadowColor: _primary.withValues(alpha: 0.3),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.play_arrow_rounded,
+                        color: Colors.white, size: 24),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Start Quiz  ·  ${_selectedLanguage['flag']}  ${_selectedLanguage['label']}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              CustomDropDown(
-                color: Color.fromRGBO(0, 51, 102, 1),
-                dropdowniconcolor: Colors.white,
-                textcolor: Colors.white,
-                dropdownColor: Color(0xFF2C2C3C),
-                items: items,
-                onChanged: (String? val) {
-                  setState(() {
-                    selectedfromLanguage = val!;
-                  });
-                },
-                selectedValue: selectedfromLanguage,
-              ),
-              const SizedBox(height: 15),
-              Text(
-                'To Language',
-                style: TextStyle(
-                  color: Colors.grey.shade800,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 18,
-                  letterSpacing: 0,
-                ),
-              ),
-              CustomDropDown(
-                color: Color.fromRGBO(0, 51, 102, 1),
-                dropdowniconcolor: Colors.white,
-                textcolor: Colors.white,
-                dropdownColor: Color(0xFF2C2C3C),
-          
-                items: items,
-                onChanged: (String? val) {
-                  setState(() {
-                    selectedtoLanguage = val!;
-                  });
-                },
-                selectedValue: selectedtoLanguage,
-              ),
-              const SizedBox(height: 15),
-              Text(
-                'Difficulty Level',
-                style: TextStyle(
-                  color: Colors.grey.shade800,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 18,
-                  letterSpacing: 0,
-                ),
-              ),
-              CustomDropDown(
-                color: Color.fromRGBO(0, 51, 102, 1),
-                dropdowniconcolor: Colors.white,
-                textcolor: Colors.white,
-                dropdownColor: Color(0xFF2C2C3C),
-          
-                items: difficultyLevel,
-                onChanged: (String? val) {
-                  setState(() {
-                    selecteddifficultyLevel = val!;
-                  });
-                },
-                selectedValue: selecteddifficultyLevel,
-              ),
-              const SizedBox(height: 15),
-              Text(
-                'Number of Quiz',
-                style: TextStyle(
-                  color: Colors.grey.shade800,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 18,
-                  letterSpacing: 0,
-                ),
-              ),
-              CustomDropDown(
-                color: Color.fromRGBO(0, 51, 102, 1),
-                dropdowniconcolor: Colors.white,
-                textcolor: Colors.white,
-                dropdownColor: Color(0xFF2C2C3C),
-                items: mcqsCount,
-                onChanged: (String? val) {
-                  setState(() {
-                    selectedMcqsCount = val!;
-                  });
-                },
-                selectedValue: selectedMcqsCount,
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 30),
+          ],
         ),
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(left: 30, right: 5),
-        child: GestureDetector(
-          onTap: () async {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (context) => GeneralWordQuizScreen(
-                      selectedfromLanguage: selectedfromLanguage,
-                      selectedtoLanguage: selectedtoLanguage,
-                      selecteddifficultyLevel: selecteddifficultyLevel,
-                      selectedMcqsCount: selectedMcqsCount,
-                    ),
-              ),
-            );
-          },
-          child: Container(
-            width: double.infinity,
-            height: 50,
+    );
+  }
+
+  Future<void> _pickLanguage() async {
+    final picked = await showLanguagePicker(
+      context: context,
+      languages: _allLanguages,
+      selected: _selectedLanguage,
+      title: 'Language to Learn',
+    );
+    if (picked != null) setState(() => _selectedLanguage = picked);
+  }
+
+  void _startQuiz() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GeneralWordQuizScreen(
+          // For English definition mode, fromLang is still 'English'
+          selectedfromLanguage: 'English',
+          selectedtoLanguage: _selectedLanguage['label']!,
+          selecteddifficultyLevel: _difficulty,
+          selectedMcqsCount: _count,
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sub-widgets
+// ─────────────────────────────────────────────────────────────────────────────
+
+
+
+class _InfoCard extends StatelessWidget {
+  final String icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+
+  const _InfoCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Color.fromRGBO(0, 51, 102, 1),
-              borderRadius: BorderRadius.circular(30),
+              color: color,
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Center(
-              child: Text(
-                'Start Quiz',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
+            child: Text(icon, style: const TextStyle(fontSize: 22)),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: color.withValues(alpha: 0.75),
+                    fontSize: 12.5,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _SectionHeader({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: const Color.fromRGBO(0, 51, 102, 0.7)),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color.fromRGBO(0, 51, 102, 1),
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LanguageSelectorCard extends StatelessWidget {
+  final Map<String, String> language;
+  final VoidCallback onTap;
+  const _LanguageSelectorCard(
+      {required this.language, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isEnglish = language['label']?.toLowerCase() == 'english';
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color.fromRGBO(0, 51, 102, 0.18),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Flag circle
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: const Color.fromRGBO(0, 51, 102, 0.07),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  language['flag'] ?? '🌐',
+                  style: const TextStyle(fontSize: 26),
                 ),
               ),
             ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    language['label'] ?? '',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color.fromRGBO(0, 51, 102, 1),
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    isEnglish
+                        ? 'Guess the definition of English words'
+                        : 'Guess the ${language['label']} translation',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color.fromRGBO(0, 51, 102, 0.08),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Change',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Color.fromRGBO(0, 51, 102, 1),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 16,
+                    color: Color.fromRGBO(0, 51, 102, 1),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DifficultyTile extends StatelessWidget {
+  final String label;
+  final String icon;
+  final String desc;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _DifficultyTile({
+    required this.label,
+    required this.icon,
+    required this.desc,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected
+              ? const Color.fromRGBO(0, 51, 102, 1)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected
+                ? const Color.fromRGBO(0, 51, 102, 1)
+                : Colors.grey.shade200,
+            width: selected ? 0 : 1,
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: const Color.fromRGBO(0, 51, 102, 0.25),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          children: [
+            Text(icon, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: selected ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  Text(
+                    desc,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: selected
+                          ? Colors.white.withValues(alpha: 0.75)
+                          : Colors.grey.shade500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (selected)
+              const Icon(Icons.check_circle, color: Colors.white, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CountChip extends StatelessWidget {
+  final String count;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _CountChip({
+    required this.count,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected
+              ? const Color.fromRGBO(0, 51, 102, 1)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: selected
+                ? const Color.fromRGBO(0, 51, 102, 1)
+                : Colors.grey.shade300,
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: const Color.fromRGBO(0, 51, 102, 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : [],
+        ),
+        child: Text(
+          count,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: selected ? Colors.white : Colors.black87,
           ),
         ),
       ),

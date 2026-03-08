@@ -14,15 +14,26 @@ class OpenAISummary {
       throw 'OpenAI API key is missing. Please set OPENAI_API_KEY or APIKEY in .env';
     }
 
-    final prompt = '''You are a helpful assistant.
+    final prompt = '''You are a friendly storyteller who makes learning fun!
 
-Generate a single coherent paragraph on the topic: "$topic".
+Create a SHORT, SIMPLE, and ENGAGING paragraph about: "$topic"
 
-Mandatory:
-- Use ALL of the following vocabulary words naturally in the text: ${words.map((w) => '"$w"').join(', ')}
-- Write in the target language: $targetLanguage
-- Medium difficulty, friendly and easy to understand.
-- Only output the paragraph text, no definitions, no lists, no explanations, no markdown.
+📝 RULES:
+- Use ALL these words naturally: ${words.map((w) => '"$w"').join(', ')}
+- Write in $targetLanguage
+- Keep it VERY SIMPLE - like talking to a friend
+- Maximum 5-6 sentences
+- Make it interesting and easy to read
+- Use everyday language, no complex words
+- Tell it like a story or conversation
+
+❌ DO NOT:
+- Use difficult vocabulary
+- Make long sentences
+- Add definitions or explanations
+- Use markdown or formatting
+
+✅ JUST OUTPUT: A short, friendly paragraph that naturally uses all the words.
 ''';
 
     final url = Uri.parse('https://api.openai.com/v1/chat/completions');

@@ -22,6 +22,21 @@ class AdManager {
   RewardedAd? _rewardedAd;
   InterstitialAd? _interstitialAd;
 
+  // Getters to check if ads are currently loaded
+  bool get isRewardedAdReady => _rewardedAd != null;
+  bool get isInterstitialAdReady => _interstitialAd != null;
+
+  // Method to ensure ads are preloaded (useful for screens that need ads soon)
+  Future<void> ensureAdsPreloaded() async {
+    await initialize();
+    if (_rewardedAd == null) {
+      unawaited(loadRewardedAd(onAdFailed: null));
+    }
+    if (_interstitialAd == null) {
+      unawaited(loadInterstitialAd(onAdFailed: null));
+    }
+  }
+
   Future<bool> _hasInternet() async {
     try {
       final result = await InternetAddress.lookup('google.com');

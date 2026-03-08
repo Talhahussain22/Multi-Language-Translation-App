@@ -21,13 +21,16 @@ class _TestResultScreenState extends State<TestResultScreen> {
   @override
   void initState() {
     super.initState();
-    // Load interstitial to show on this result screen
-    _adManager.loadInterstitialAd(onAdFailed: null).then((_) {
+    // Show interstitial ad that should already be preloaded from test setup screen
+    // This ensures smooth user experience without waiting for ad to load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _adManager.showInterstitialAd(
         onAdDismissed: () {
           // After ad close user can choose to go back; we keep normal flow.
         },
-        onAdFailed: () {},
+        onAdFailed: () {
+          // If ad fails (not loaded or network issue), user can still see results
+        },
       );
     });
   }

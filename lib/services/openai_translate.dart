@@ -1,10 +1,11 @@
 import 'dart:convert';
 
+import 'package:ai_text_to_speech/model/translation_result.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 class OpenAITranslate {
-  Future<String> TranslateWord({required String prompt_message}) async {
+  Future<TranslationResult> TranslateWord({required String prompt_message}) async {
     final apiKey = dotenv.env['OPENAI_API_KEY'] ?? dotenv.env['APIKEY'];
     if (apiKey == null || apiKey.isEmpty) {
       throw 'OpenAI API key is missing. Please set OPENAI_API_KEY or APIKEY in .env';
@@ -23,7 +24,8 @@ class OpenAITranslate {
       "messages": [
         {
           "role": "system",
-          "content": "You are a precise translation assistant. Always return valid JSON that exactly matches the schema in the user's message. Do not add any extra commentary or markdown."
+          "content":
+              "You are a precise translation assistant. Always return valid JSON that exactly matches the schema in the user's message. Do not add any extra commentary or markdown."
         },
         {"role": "user", "content": prompt_message}
       ]
@@ -51,9 +53,12 @@ class OpenAITranslate {
                 .trim();
             try {
               final Map<String, dynamic> jsonMap = jsonDecode(cleaned);
-              final translation = jsonMap['translation'];
-              if (translation is String) return translation;
-              throw 'Unexpected JSON shape: missing translation field.';
+              final result = TranslationResult.fromMap(jsonMap);
+              if (result.nativeTranslation == null ||
+                  result.nativeTranslation!.isEmpty) {
+                throw 'Unexpected JSON shape: missing translation field.';
+              }
+              return result;
             } catch (e) {
               throw e.toString();
             }

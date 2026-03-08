@@ -1,5 +1,6 @@
 import 'package:ai_text_to_speech/model/hive_model.dart';
 import 'package:ai_text_to_speech/screen/FavouriteWordsQuizScreen.dart';
+import 'package:ai_text_to_speech/services/ad_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hive/hive.dart';
@@ -16,9 +17,11 @@ class _FavouriteWordTestScreenState extends State<FavouriteWordTestScreen> {
   late List<FavoriteWord> favouritewords;
   late int hinttextval;
   List<FavoriteWord>? finalselectedwords;
+  final _adManager = AdManager();
 
   @override
   void initState() {
+    super.initState();
     controller=TextEditingController();
     final hivebox=Hive.box<FavoriteWord>('favourites');
     favouritewords=hivebox.values.toList();
@@ -37,7 +40,11 @@ class _FavouriteWordTestScreenState extends State<FavouriteWordTestScreen> {
               fontSize: 16.0);
         });
       }
-    super.initState();
+
+    // Preload ads when user enters this screen to prepare for test completion
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _adManager.ensureAdsPreloaded();
+    });
   }
   @override
   void dispose() {
