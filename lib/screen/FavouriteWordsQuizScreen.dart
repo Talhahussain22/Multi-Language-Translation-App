@@ -28,7 +28,6 @@ class _FavouriteWordsQuizScreenState extends State<FavouriteWordsQuizScreen> {
   String? correctOption;
   int? totalMcqs;
   bool _submitted = false;
-  bool _errorDialogShowing = false;
 
   @override
   void initState() {
@@ -43,36 +42,6 @@ class _FavouriteWordsQuizScreenState extends State<FavouriteWordsQuizScreen> {
   // Helper: display label for an MCQOption
   // ──────────────────────────────────────────────
   String _optionLabel(MCQOption opt) => opt.label;
-
-  Future<void> _showErrorDialog(String rawError) async {
-    if (_errorDialogShowing || !mounted) return;
-    _errorDialogShowing = true;
-
-    final msg = AppDialogs.prettyError(rawError);
-
-    await AppDialogs.showErrorDialog(
-      context,
-      title: 'Quiz couldn’t load',
-      message: msg,
-      onRetry: () {
-        if (!mounted) return;
-        setState(() {
-          selectedOption = null;
-          _submitted = false;
-          mcqsNumber = 0;
-          correctAnswers = 0;
-        });
-        context
-            .read<FavouriteQuizBloc>()
-            .add(OnFavouriteQuizStartButtonPressed(words: widget.words));
-      },
-      showExit: true,
-      exitLabel: 'Exit',
-      retryLabel: 'Retry',
-    );
-
-    _errorDialogShowing = false;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -148,10 +117,61 @@ class _FavouriteWordsQuizScreenState extends State<FavouriteWordsQuizScreen> {
         ),
         centerTitle: true,
       ),
-      body: BlocBuilder<FavouriteQuizBloc, FavouriteQuizState>(
+      body: BlocConsumer<FavouriteQuizBloc, FavouriteQuizState>(
+        listener: (context, state) {
+          if (state is FavouriteQuizErrorState) {
+            AppDialogs.showApiError(
+              context,
+              title: 'Quiz couldn\'t load',
+              error: state.error,
+              onRetry: () {
+                setState(() {
+                  selectedOption = null;
+                  _submitted = false;
+                  mcqsNumber = 0;
+                  correctAnswers = 0;
+                });
+                context.read<FavouriteQuizBloc>()
+                    .add(OnFavouriteQuizStartButtonPressed(words: widget.words));
+              },
+            );
+          }
+        },
         builder: (context, state) {
           if (state is FavouriteQuizErrorState) {
-            _showErrorDialog(state.error.toString());
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.wifi_off_rounded, size: 64, color: Colors.redAccent),
+                    const SizedBox(height: 16),
+                    const Text('Quiz failed to load',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Text(AppDialogs.prettyError(state.error),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey.shade700)),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          selectedOption = null;
+                          _submitted = false;
+                          mcqsNumber = 0;
+                          correctAnswers = 0;
+                        });
+                        context.read<FavouriteQuizBloc>()
+                            .add(OnFavouriteQuizStartButtonPressed(words: widget.words));
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Try Again'),
+                    ),
+                  ],
+                ),
+              ),
+            );
           } else if (state is FavouriteQuizLoadingState) {
             return Center(
               child: AnimatedTextKit(

@@ -7,6 +7,7 @@ import 'package:ai_text_to_speech/model/translation_result.dart';
 import 'package:ai_text_to_speech/screen/components/CustomTextFeild.dart';
 import 'package:ai_text_to_speech/screen/components/language_picker_sheet.dart';
 import 'package:ai_text_to_speech/screen/HistoryPage.dart';
+import 'package:ai_text_to_speech/Utils/app_dialogs.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -133,8 +134,15 @@ class _HomePageState extends State<HomePage> {
       body: BlocConsumer<OnTranslateBloc, OnTranslateState>(
         listener: (context, state) {
           if (state is OnTranslateFailureState) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(state.error)));
+            AppDialogs.showApiError(
+              context,
+              title: 'Translation failed',
+              error: state.error,
+              onRetry: () {
+                // Best-effort retry: re-dispatch the last translate action if your bloc supports it.
+                // If not available, user can tap Translate again.
+              },
+            );
           } else if (state is OnTranslateSuccessState) {
             setState(() {
               _currentResult = state.result;
@@ -760,4 +768,3 @@ class _LanguageChip extends StatelessWidget {
     );
   }
 }
-

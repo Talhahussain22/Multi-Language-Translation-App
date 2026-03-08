@@ -136,5 +136,39 @@ class AppDialogs {
 
     return result ?? false;
   }
-}
 
+  /// Shows a consistent API / network failure dialog.
+  ///
+  /// Use this for any API call failure (OpenAI, translation stream, etc.).
+  static Future<void> showApiError(
+    BuildContext context, {
+    String title = 'Something went wrong',
+    required Object error,
+    String? messageOverride,
+    VoidCallback? onRetry,
+  }) {
+    final msg = messageOverride ?? prettyError(error.toString());
+
+    return showErrorDialog(
+      context,
+      title: title,
+      message: msg,
+      onRetry: onRetry,
+      showExit: true,
+      retryLabel: 'Try again',
+      exitLabel: 'Close',
+    );
+  }
+
+  /// Convenience: show a snackbar only if message isn't empty.
+  static void showSnackIfNotEmpty(
+    BuildContext context, {
+    required String? message,
+    Color? background,
+    Duration duration = const Duration(seconds: 2),
+  }) {
+    final msg = (message ?? '').trim();
+    if (msg.isEmpty) return;
+    showSnack(context, message: msg, background: background, duration: duration);
+  }
+}

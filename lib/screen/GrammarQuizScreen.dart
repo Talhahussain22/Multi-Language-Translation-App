@@ -107,32 +107,57 @@ class _GrammarQuizScreenState extends State<GrammarQuizScreen> {
         ),
         centerTitle: true,
       ),
-      body: BlocBuilder<GrammarTestBloc, GrammarTestState>(
+      body: BlocConsumer<GrammarTestBloc, GrammarTestState>(
+        listener: (context, state) {
+          if (state is GrammarTestError) {
+            AppDialogs.showApiError(
+              context,
+              title: 'Practice couldn\'t load',
+              error: state.error,
+              onRetry: () {
+                context.read<GrammarTestBloc>().add(
+                      GrammarTestStarted(
+                        language: widget.language,
+                        testType: widget.testType,
+                        count: widget.totalQuestions.toString(),
+                      ),
+                    );
+              },
+            );
+          }
+        },
         builder: (context, state) {
           if (state is GrammarTestError) {
-            WidgetsBinding.instance.addPostFrameCallback((_) async {
-              bool retried = false;
-              await AppDialogs.showErrorDialog(
-                context,
-                title: 'Practice couldn’t load',
-                message: AppDialogs.prettyError(state.error),
-                onRetry: () {
-                  retried = true;
-                  context.read<GrammarTestBloc>().add(
-                        GrammarTestStarted(
-                          language: widget.language,
-                          testType: widget.testType,
-                          count: widget.totalQuestions.toString(),
-                        ),
-                      );
-                },
-                showExit: true,
-                exitLabel: 'Exit',
-                retryLabel: 'Retry',
-              );
-              if (!retried && mounted) Navigator.pop(context);
-            });
-            return const SizedBox.shrink();
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.wifi_off_rounded, size: 64, color: Colors.redAccent),
+                    const SizedBox(height: 16),
+                    const Text('Practice failed to load',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Text(AppDialogs.prettyError(state.error),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey.shade700)),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        context.read<GrammarTestBloc>().add(GrammarTestStarted(
+                              language: widget.language,
+                              testType: widget.testType,
+                              count: widget.totalQuestions.toString(),
+                            ));
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Try Again'),
+                    ),
+                  ],
+                ),
+              ),
+            );
           } else if (state is GrammarTestLoading) {
             return Center(
               child: AnimatedTextKit(

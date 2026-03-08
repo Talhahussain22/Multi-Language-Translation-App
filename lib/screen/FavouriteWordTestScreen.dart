@@ -1,8 +1,8 @@
 import 'package:ai_text_to_speech/model/hive_model.dart';
 import 'package:ai_text_to_speech/screen/FavouriteWordsQuizScreen.dart';
 import 'package:ai_text_to_speech/services/ad_manager.dart';
+import 'package:ai_text_to_speech/Utils/app_dialogs.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hive/hive.dart';
 
 class FavouriteWordTestScreen extends StatefulWidget {
@@ -35,14 +35,14 @@ class _FavouriteWordTestScreenState extends State<FavouriteWordTestScreen> {
 
     if (hinttextval == 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Fluttertoast.showToast(
-            msg: "Please favourite some words before starting the quiz",
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.BOTTOM,
-            timeInSecForIosWeb: 2,
-            backgroundColor: Colors.teal,
-            textColor: Colors.white,
-            fontSize: 16.0);
+        if (mounted) {
+          AppDialogs.showSnack(
+            context,
+            message: 'Please save some words before starting the quiz',
+            background: Colors.teal,
+            duration: const Duration(seconds: 3),
+          );
+        }
       });
     }
 

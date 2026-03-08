@@ -84,37 +84,63 @@ class _GeneralWordQuizScreenState extends State<GeneralWordQuizScreen> {
         ),
         centerTitle: true,
       ),
-      body: BlocBuilder<GeneralquizBloc, GeneralquizState>(
+      body: BlocConsumer<GeneralquizBloc, GeneralquizState>(
+        listener: (context, state) {
+          if (state is GeneralQuizErrorState) {
+            AppDialogs.showApiError(
+              context,
+              title: 'Quiz couldn\'t load',
+              error: state.error ?? 'Unknown error',
+              onRetry: () {
+                context.read<GeneralquizBloc>().add(
+                      GeneralQuizStartButtonPressesd(
+                        fromLang: widget.selectedfromLanguage,
+                        toLang: widget.selectedtoLanguage,
+                        difficulty: widget.selecteddifficultyLevel,
+                        numberofQuiz: widget.selectedMcqsCount,
+                      ),
+                    );
+              },
+            );
+          }
+        },
         builder: (context, state) {
           if (state is GeneralQuizErrorState) {
-            WidgetsBinding.instance.addPostFrameCallback((_) async {
-              bool retried = false;
-              await AppDialogs.showErrorDialog(
-                context,
-                title: 'Quiz couldn’t load',
-                message: AppDialogs.prettyError(state.error.toString()),
-                onRetry: () {
-                  retried = true;
-                  context.read<GeneralquizBloc>().add(
-                        GeneralQuizStartButtonPressesd(
-                          fromLang: widget.selectedfromLanguage,
-                          toLang: widget.selectedtoLanguage,
-                          difficulty: widget.selecteddifficultyLevel,
-                          numberofQuiz: widget.selectedMcqsCount,
-                        ),
-                      );
-                },
-                showExit: true,
-                exitLabel: 'Exit',
-                retryLabel: 'Retry',
-              );
-
-              // If user didn't retry, exit the quiz screen.
-              if (!retried && mounted) {
-                Navigator.pop(context);
-              }
-            });
-            return const SizedBox.shrink();
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.wifi_off_rounded, size: 64, color: Colors.redAccent),
+                    const SizedBox(height: 16),
+                    const Text('Quiz failed to load',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Text(
+                      AppDialogs.prettyError(state.error?.toString() ?? ''),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey.shade700),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        context.read<GeneralquizBloc>().add(
+                              GeneralQuizStartButtonPressesd(
+                                fromLang: widget.selectedfromLanguage,
+                                toLang: widget.selectedtoLanguage,
+                                difficulty: widget.selecteddifficultyLevel,
+                                numberofQuiz: widget.selectedMcqsCount,
+                              ),
+                            );
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Try Again'),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
 
           if (state is GeneralQuizLoadingState) {

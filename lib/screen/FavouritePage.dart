@@ -1,9 +1,9 @@
 import 'package:ai_text_to_speech/bloc/on_favourite_clear/on_favourite_delete_bloc.dart';
 import 'package:ai_text_to_speech/model/hive_model.dart';
 import 'package:ai_text_to_speech/screen/components/flip_card.dart';
+import 'package:ai_text_to_speech/Utils/app_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hive/hive.dart';
 
 class Favouritepage extends StatefulWidget {
@@ -20,16 +20,15 @@ class _FavouritepageState extends State<Favouritepage> {
   @override
   void initState() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Fluttertoast.showToast(
-          msg: "Tap Word to see Translation",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.teal,
-          textColor: Colors.white,
-          fontSize: 16.0);
+      if (mounted) {
+        AppDialogs.showSnack(
+          context,
+          message: 'Tap a word to see its translation',
+          background: Colors.teal,
+          duration: const Duration(seconds: 2),
+        );
+      }
     });
-
 
     super.initState();
   }

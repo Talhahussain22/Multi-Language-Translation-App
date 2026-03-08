@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../Utils/app_dialogs.dart';
 import '../bloc/daily_word/daily_word_bloc.dart';
 import '../model/daily_word_model.dart';
 import '../services/ad_manager.dart';
@@ -137,7 +138,17 @@ class _DailyWordScreenState extends State<DailyWordScreen> {
           ),
         ],
       ),
-      body: BlocBuilder<DailyWordBloc, DailyWordState>(
+      body: BlocConsumer<DailyWordBloc, DailyWordState>(
+        listener: (context, state) {
+          if (state is DailyWordError) {
+            AppDialogs.showApiError(
+              context,
+              title: 'Daily Word failed to load',
+              error: state.message,
+              onRetry: _dispatchLoad,
+            );
+          }
+        },
         builder: (context, state) {
           if (state is DailyWordLoading) {
             return const Center(
@@ -155,20 +166,21 @@ class _DailyWordScreenState extends State<DailyWordScreen> {
           }
 
           if (state is DailyWordError) {
+            // Keep a lightweight fallback UI; dialog is shown via listener.
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline,
-                        size: 64, color: Colors.red),
+                    const Icon(Icons.wifi_off_rounded,
+                        size: 64, color: Colors.redAccent),
                     const SizedBox(height: 16),
-                    const Text('Oops! Something went wrong',
+                    const Text('Can’t load Daily Word',
                         style: TextStyle(
                             fontSize: 20, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    Text(state.message,
+                    Text(AppDialogs.prettyError(state.message),
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.grey.shade700)),
                     const SizedBox(height: 24),
@@ -1385,4 +1397,3 @@ class _LangPair {
 
   _LangPair(this.native, this.learning);
 }
-
