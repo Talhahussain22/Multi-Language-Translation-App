@@ -4,7 +4,7 @@ import 'package:ai_text_to_speech/screen/GrammarTestScreen.dart';
 import 'package:flutter/material.dart';
 
 class TestPage extends StatelessWidget {
-  TestPage({super.key});
+  const TestPage({super.key});
 
   static const _primary = Color.fromRGBO(0, 51, 102, 1);
   static const _accent  = Color(0xFFFF6B35);

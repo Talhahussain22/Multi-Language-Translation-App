@@ -1,14 +1,14 @@
 import 'dart:convert';
 
 import 'package:ai_text_to_speech/model/translation_result.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:ai_text_to_speech/services/app_config.dart';
 import 'package:http/http.dart' as http;
 
 class OpenAITranslate {
   Future<TranslationResult> TranslateWord({required String prompt_message}) async {
-    final apiKey = dotenv.env['OPENAI_API_KEY'] ?? dotenv.env['APIKEY'];
-    if (apiKey == null || apiKey.isEmpty) {
-      throw 'OpenAI API key is missing. Please set OPENAI_API_KEY or APIKEY in .env';
+    const apiKey = AppConfig.openAiApiKey;
+    if (apiKey.isEmpty) {
+      throw 'OpenAI API key is missing. Build with --dart-define=OPENAI_API_KEY=your-key';
     }
 
     final url = Uri.parse('https://api.openai.com/v1/chat/completions');

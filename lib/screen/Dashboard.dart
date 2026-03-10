@@ -3,6 +3,9 @@ import 'package:ai_text_to_speech/screen/Homepage.dart';
 import 'package:ai_text_to_speech/screen/SettingsScreen.dart';
 import 'package:ai_text_to_speech/screen/DailyWordScreen.dart';
 import 'package:ai_text_to_speech/screen/TestPage.dart';
+import 'package:ai_text_to_speech/screen/components/app_banner_ad.dart'; // banner widget
+import 'package:ai_text_to_speech/services/ad_manager.dart';
+import 'package:ai_text_to_speech/services/usage_limit_service.dart';
 import 'package:flutter/material.dart';
 
 class Dashboard extends StatefulWidget {
@@ -15,6 +18,12 @@ class _DashboardState extends State<Dashboard> {
 
   static const _primary = Color.fromRGBO(0, 51, 102, 1);
   static const _accent  = Color(0xFFFF6B35);
+
+  // Banner shown above the nav bar on ALL main screens
+  static const _bannerScreens = {0, 1, 2, 3, 4};
+
+  final _adManager   = AdManager();
+  final _usageLimits = UsageLimitService();
 
   final List<_NavItem> _items = const [
     _NavItem(icon: Icons.psychology_rounded,    activeIcon: Icons.psychology,          label: 'Test'),
@@ -33,19 +42,47 @@ class _DashboardState extends State<Dashboard> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _adManager.ensureAdsPreloaded();
+    });
+  }
+
+  Future<void> _onNavTap(int index) async {
+    if (index == selectedIndex) return; // same tab — no counter
+    setState(() => selectedIndex = index);
+
+    final shouldShow = await _usageLimits.recordNavigation();
+    if (!mounted) return;
+    if (shouldShow) {
+      await _adManager.showInterstitialIfReady();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final showBanner = _bannerScreens.contains(selectedIndex);
+
     return SafeArea(
       bottom: true,
       top: false,
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F7FA),
         body: _pages[selectedIndex],
-        bottomNavigationBar: _PremiumNavBar(
-          items: _items,
-          selectedIndex: selectedIndex,
-          onTap: (i) => setState(() => selectedIndex = i),
-          primary: _primary,
-          accent: _accent,
+        // ── Bottom area: [banner (optional)] + [nav bar] ──────────────────
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showBanner) const AppBannerAd(),
+            _PremiumNavBar(
+              items: _items,
+              selectedIndex: selectedIndex,
+              onTap: _onNavTap,
+              primary: _primary,
+              accent: _accent,
+            ),
+          ],
         ),
       ),
     );

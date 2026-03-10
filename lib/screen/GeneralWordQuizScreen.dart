@@ -1,6 +1,8 @@
 import 'package:ai_text_to_speech/bloc/generalquizBloc/generalquiz_bloc.dart';
 import 'package:ai_text_to_speech/model/gemini_response_model.dart';
 import 'package:ai_text_to_speech/screen/TestResultScreen.dart';
+import 'package:ai_text_to_speech/screen/components/app_banner_ad.dart';
+import 'package:ai_text_to_speech/services/ad_manager.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -40,6 +42,10 @@ class _GeneralWordQuizScreenState extends State<GeneralWordQuizScreen> {
 
   @override
   void initState() {
+    // Preload interstitial immediately — user will hit the result screen
+    // after answering all questions, and the ad must already be ready.
+    AdManager().ensureAdsPreloaded();
+
     context.read<GeneralquizBloc>().add(
           GeneralQuizStartButtonPressesd(
             fromLang: widget.selectedfromLanguage,
@@ -224,6 +230,7 @@ class _GeneralWordQuizScreenState extends State<GeneralWordQuizScreen> {
           return const SizedBox.shrink();
         },
       ),
+      bottomNavigationBar: const AppBannerAd(),
     );
   }
 

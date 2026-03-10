@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 class CustomDropDown extends StatelessWidget {
-  List<String> items;
-  dynamic Function(String?) onChanged;
-  String? selectedValue;
-  Color color;
-  Color dropdowniconcolor;
-  Color textcolor;
-  Color dropdownColor;
-  CustomDropDown({super.key, required this.items, required this.onChanged,required this.selectedValue,required this.color,required this.dropdowniconcolor,required this.textcolor,required this.dropdownColor});
+  final List<String> items;
+  final dynamic Function(String?) onChanged;
+  final String? selectedValue;
+  final Color color;
+  final Color dropdowniconcolor;
+  final Color textcolor;
+  final Color dropdownColor;
+  const CustomDropDown({super.key, required this.items, required this.onChanged, required this.selectedValue, required this.color, required this.dropdowniconcolor, required this.textcolor, required this.dropdownColor});
 
   @override
   Widget build(BuildContext context) {

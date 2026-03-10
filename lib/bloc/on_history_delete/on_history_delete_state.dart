@@ -5,7 +5,7 @@ sealed class OnHistoryDeleteState {}
 
 final class OnHistoryDeleteInitial extends OnHistoryDeleteState {}
 
-final class OnHistoryLoadedState extends OnHistoryDeleteState{
-  List<HistoryModel> history;
+final class OnHistoryLoadedState extends OnHistoryDeleteState {
+  final List<HistoryModel> history;
   OnHistoryLoadedState({required this.history});
 }

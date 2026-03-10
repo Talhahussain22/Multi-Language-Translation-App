@@ -3,7 +3,7 @@ part of 'on_favourite_bloc.dart';
 @immutable
 sealed class OnFavouriteEvent {}
 
-class OnFavouriteButtonClicked extends OnFavouriteEvent{
-  FavoriteWord favoriteWord;
+final class OnFavouriteButtonClicked extends OnFavouriteEvent {
+  final FavoriteWord favoriteWord;
   OnFavouriteButtonClicked({required this.favoriteWord});
 }

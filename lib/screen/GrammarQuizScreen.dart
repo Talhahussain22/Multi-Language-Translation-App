@@ -1,6 +1,8 @@
 import 'package:ai_text_to_speech/bloc/grammarTestBloc/grammar_test_bloc.dart';
 import 'package:ai_text_to_speech/screen/TestResultScreen.dart';
+import 'package:ai_text_to_speech/screen/components/app_banner_ad.dart';
 import 'package:ai_text_to_speech/screen/components/optioncontainer.dart';
+import 'package:ai_text_to_speech/services/ad_manager.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -29,6 +31,13 @@ class _GrammarQuizScreenState extends State<GrammarQuizScreen> {
   int correctAnswers = 0;
   String? correctOption;
   bool showHint = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Preload interstitial so it's ready when the user finishes the quiz.
+    AdManager().ensureAdsPreloaded();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -415,6 +424,7 @@ class _GrammarQuizScreenState extends State<GrammarQuizScreen> {
           return const SizedBox();
         },
       ),
+      bottomNavigationBar: const AppBannerAd(),
     );
   }
 

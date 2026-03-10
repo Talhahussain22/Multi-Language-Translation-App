@@ -5,19 +5,17 @@ import 'package:ai_text_to_speech/bloc/on_favourite/on_favourite_bloc.dart';
 import 'package:ai_text_to_speech/bloc/on_favourite_clear/on_favourite_delete_bloc.dart';
 import 'package:ai_text_to_speech/bloc/on_history_delete/on_history_delete_bloc.dart';
 import 'package:ai_text_to_speech/bloc/on_translate/on_translate_bloc.dart';
-import 'package:ai_text_to_speech/bloc/summary_fetch/summary_fetch_bloc.dart';
 import 'package:ai_text_to_speech/bloc/daily_word/daily_word_bloc.dart';
 import 'package:ai_text_to_speech/model/history_model.dart';
 import 'package:ai_text_to_speech/model/saved_language.dart';
 import 'package:ai_text_to_speech/model/daily_word_model.dart';
 import 'package:ai_text_to_speech/services/ad_manager.dart';
+import 'package:ai_text_to_speech/services/app_config.dart';
 import 'package:ai_text_to_speech/services/network_services.dart';
 import 'package:ai_text_to_speech/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:hive/hive.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -26,7 +24,6 @@ import 'model/hive_model.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Lock orientation to portrait only
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -46,21 +43,32 @@ void main() async {
   await Hive.openBox<DailyWordModel>('daily_words');
   await Hive.openBox<DailyWordStreak>('daily_word_streak');
 
-  await dotenv.load(fileName: '.env');
+  // Validate API key is present at startup
+  AppConfig.validate();
 
-  runApp(MyApp());
+  // Initialize AdMob SDK once at startup — before runApp so ads are warm early.
+  try {
+    await AdManager().initialize();
+  } catch (_) {
+    // Ad init failure is non-fatal; app continues without ads.
+  }
 
+  runApp(const MyApp());
 }
 
+// Single shared NetworkServices instance — never recreated.
+final _networkServices = NetworkServices();
+
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    final NetworkServices networkServices = NetworkServices();
     final colorScheme = ColorScheme.fromSeed(seedColor: const Color(0xFF003366));
     final theme = ThemeData(
       colorScheme: colorScheme,
       useMaterial3: true,
-      brightness: Brightness.light, // Light mode only
+      brightness: Brightness.light,
       scaffoldBackgroundColor: Colors.white,
       appBarTheme: AppBarTheme(
         backgroundColor: colorScheme.primary,
@@ -95,40 +103,26 @@ class MyApp extends StatelessWidget {
       dividerTheme: const DividerThemeData(thickness: 0.8),
     );
 
-    // Initialize AdManager and preload ads after first frame to ensure plugins are ready.
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      try {
-        await AdManager().initialize();
-      } catch (e) {
-          // Handle ad initialization errors gracefully, e.g., log to console or show a non-intrusive message.
-        debugPrint("Ad init failed: ${e.toString()}");
-      }
-    });
-
     return ScreenUtilInit(
-      designSize: const Size(390, 844), // Base size (Pixel 6-ish). Adjust as needed.
+      designSize: const Size(390, 844),
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) {
         return MultiBlocProvider(
           providers: [
-            BlocProvider(create: (_) => OnTranslateBloc(networkServices)),
+            BlocProvider(create: (_) => OnTranslateBloc(_networkServices)),
             BlocProvider(create: (_) => OnFavouriteBloc()),
             BlocProvider(create: (_) => DailyWordBloc()),
             BlocProvider(create: (_) => OnHistoryDeleteBloc()),
             BlocProvider(create: (_) => OnFavouriteDeleteBloc()),
-            BlocProvider(create: (_) => SummaryFetchBloc()),
             BlocProvider(create: (_) => GeneralquizBloc()),
             BlocProvider(create: (_) => FavouriteQuizBloc()),
             BlocProvider(create: (_) => GrammarTestBloc()),
           ],
           child: MaterialApp(
-            // Note: Add your AdMob App ID in AndroidManifest.xml under <application>:
-            // <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713" />
-            // Use test IDs above in debug; replace with real IDs for release.
             theme: theme,
             debugShowCheckedModeBanner: false,
-            home: SplashScreen(),
+            home: const SplashScreen(),
           ),
         );
       },

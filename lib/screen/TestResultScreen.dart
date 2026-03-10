@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import '../screen/components/app_banner_ad.dart';
 import '../services/ad_manager.dart';
+import '../services/usage_limit_service.dart';
 
 class TestResultScreen extends StatefulWidget {
   final int correctAnswers;
@@ -16,22 +18,31 @@ class TestResultScreen extends StatefulWidget {
 }
 
 class _TestResultScreenState extends State<TestResultScreen> {
-  final _adManager = AdManager();
+  final _adManager   = AdManager();
+  final _usageLimits = UsageLimitService();
 
   @override
   void initState() {
     super.initState();
-    // Show interstitial ad that should already be preloaded from test setup screen
-    // This ensures smooth user experience without waiting for ad to load
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _adManager.showInterstitialAd(
-        onAdDismissed: () {
-          // After ad close user can choose to go back; we keep normal flow.
-        },
-        onAdFailed: () {
-          // If ad fails (not loaded or network issue), user can still see results
-        },
-      );
+    // Preload the next interstitial immediately so it's ready for subsequent tests
+    _adManager.ensureAdsPreloaded();
+
+    // Show interstitial after result UI has rendered (brief delay for smooth UX)
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final should = await _usageLimits.shouldShowAdOnTestComplete();
+      if (!mounted) return;
+      if (should) {
+        _adManager.showInterstitialAd(
+          onAdDismissed: () {
+            // Immediately preload the next interstitial for the next test
+            _adManager.ensureAdsPreloaded();
+          },
+          onAdFailed: () {
+            // Ad failed silently — preload anyway for next opportunity
+            _adManager.ensureAdsPreloaded();
+          },
+        );
+      }
     });
   }
 
@@ -39,6 +50,7 @@ class _TestResultScreenState extends State<TestResultScreen> {
   Widget build(BuildContext context) {
     final totalpercentage = ((widget.correctAnswers / widget.totalScore) * 100).round();
     return Scaffold(
+      bottomNavigationBar: const AppBannerAd(),
       appBar: AppBar(
         backgroundColor: Color.fromRGBO(0, 51, 102, 1),
         iconTheme: IconThemeData(color: Colors.white),

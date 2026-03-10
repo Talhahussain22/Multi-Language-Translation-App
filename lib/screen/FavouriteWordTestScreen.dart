@@ -1,5 +1,6 @@
 import 'package:ai_text_to_speech/model/hive_model.dart';
 import 'package:ai_text_to_speech/screen/FavouriteWordsQuizScreen.dart';
+import 'package:ai_text_to_speech/screen/components/app_banner_ad.dart';
 import 'package:ai_text_to_speech/services/ad_manager.dart';
 import 'package:ai_text_to_speech/Utils/app_dialogs.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +14,6 @@ class FavouriteWordTestScreen extends StatefulWidget {
 }
 
 class _FavouriteWordTestScreenState extends State<FavouriteWordTestScreen> {
-  late TextEditingController controller=TextEditingController();
   late List<FavoriteWord> favouritewords;
   late int hinttextval;
   List<FavoriteWord>? finalselectedwords;
@@ -23,12 +23,10 @@ class _FavouriteWordTestScreenState extends State<FavouriteWordTestScreen> {
   @override
   void initState() {
     super.initState();
-    controller = TextEditingController();
     final hivebox = Hive.box<FavoriteWord>('favourites');
     favouritewords = hivebox.values.toList();
     hinttextval = favouritewords.length;
 
-    // Default quiz size
     if (hinttextval > 0) {
       _quizCount = hinttextval >= 10 ? 10 : hinttextval;
     }
@@ -50,17 +48,14 @@ class _FavouriteWordTestScreenState extends State<FavouriteWordTestScreen> {
       _adManager.ensureAdsPreloaded();
     });
   }
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
+
   @override
   Widget build(BuildContext context) {
     final maxCount = hinttextval;
     final canStart = maxCount > 0 && _quizCount > 0 && _quizCount <= maxCount;
 
     return Scaffold(
+      bottomNavigationBar: const AppBannerAd(),
       appBar: AppBar(
         backgroundColor: const Color.fromRGBO(0, 51, 102, 1),
         title: const Text(

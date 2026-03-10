@@ -73,11 +73,19 @@ class _HistoryPageState extends State<HistoryPage> {
       ),
       body: BlocBuilder<OnHistoryDeleteBloc,OnHistoryDeleteState>(
         builder: (context,state) {
-          if(state is OnHistoryLoadedState)
-            {
-              final words=state.history;
-              
-              return words.isEmpty?Center(child: Image.asset('assets/data_unavailiable.png')):SingleChildScrollView(child: ListView.builder(shrinkWrap: true,physics: NeverScrollableScrollPhysics(),itemCount: words.length,itemBuilder: (context,index){
+          if (state is OnHistoryLoadedState) {
+              final words = state.history;
+              if (words.isEmpty) {
+                return Center(
+                  child: Image.asset(
+                    'assets/data_unavailiable.png',
+                    cacheWidth: 400,
+                  ),
+                );
+              }
+              return ListView.builder(
+                itemCount: words.length,
+                itemBuilder: (context, index) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10,vertical: 8),
                   child: Material(
@@ -165,15 +173,11 @@ class _HistoryPageState extends State<HistoryPage> {
                     ),
                   ),
                 );
-              }));
+              });
+            } else {
+              return const Center(child: CircularProgressIndicator());
             }
-          else
-            {
-              return Center(child: CircularProgressIndicator(),);
-            }
-
-
-        }
+        },
       ),
     );
   }

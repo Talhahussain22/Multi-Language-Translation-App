@@ -1,7 +1,10 @@
 import 'package:ai_text_to_speech/data/languagedata.dart';
 import 'package:ai_text_to_speech/screen/GeneralWordQuizScreen.dart';
+import 'package:ai_text_to_speech/screen/components/app_banner_ad.dart';
 import 'package:ai_text_to_speech/screen/components/language_picker_sheet.dart';
 import 'package:ai_text_to_speech/services/ad_manager.dart';
+import 'package:ai_text_to_speech/services/usage_limit_service.dart';
+import 'package:ai_text_to_speech/Utils/app_dialogs.dart';
 import 'package:flutter/material.dart';
 
 class GeneralTestScreen extends StatefulWidget {
@@ -20,7 +23,8 @@ class _GeneralTestScreenState extends State<GeneralTestScreen> {
   late Map<String, String> _selectedLanguage;
   String _difficulty = 'Easy';
   String _count = '10';
-  final _adManager = AdManager();
+  final _adManager   = AdManager();
+  final _usageLimits = UsageLimitService();
 
   final List<Map<String, dynamic>> _difficulties = [
     {'label': 'Easy', 'icon': '🌱', 'desc': 'Common everyday words'},
@@ -51,6 +55,7 @@ class _GeneralTestScreenState extends State<GeneralTestScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
+      bottomNavigationBar: const AppBannerAd(),
       appBar: AppBar(
         backgroundColor: _primary,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -168,17 +173,92 @@ class _GeneralTestScreenState extends State<GeneralTestScreen> {
     if (picked != null) setState(() => _selectedLanguage = picked);
   }
 
-  void _startQuiz() {
+  void _startQuiz() async {
+    final canGenerate = await _usageLimits.canGenerateQuiz();
+    if (!canGenerate) {
+      if (!mounted) return;
+      _showQuizLimitDialog();
+      return;
+    }
+    await _usageLimits.recordQuizGeneration();
+    if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => GeneralWordQuizScreen(
-          // For English definition mode, fromLang is still 'English'
           selectedfromLanguage: 'English',
           selectedtoLanguage: _selectedLanguage['label']!,
           selecteddifficultyLevel: _difficulty,
           selectedMcqsCount: _count,
         ),
+      ),
+    );
+  }
+
+  void _showQuizLimitDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.lock_clock, color: Color(0xFFFF6B35)),
+            SizedBox(width: 10),
+            Text('Quiz Limit Reached', style: TextStyle(fontSize: 17)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'You have used all ${UsageLimitService.dailyQuizLimit} free quiz generations for today.',
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Watch a short ad to unlock 1 more quiz, or come back tomorrow.',
+              style: TextStyle(fontSize: 13, color: Colors.black54),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Later'),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.play_circle_fill, size: 18),
+            label: const Text('Watch Ad'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF003366),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _adManager.showRewardedAd(
+                onRewardEarned: () => _usageLimits.grantRewardedQuiz(),
+                onAdDismissed: () {
+                  if (mounted) {
+                    AppDialogs.showSnack(context,
+                        message: '1 quiz generation unlocked!',
+                        background: Colors.green);
+                    _startQuiz();
+                  }
+                },
+                onAdFailed: () {
+                  if (mounted) {
+                    AppDialogs.showSnack(context,
+                        message: 'Ad not available. Try again later.',
+                        background: Colors.redAccent);
+                  }
+                },
+              );
+            },
+          ),
+        ],
       ),
     );
   }

@@ -1,3 +1,12 @@
+# ── SECURITY: Never commit secrets ──────────────────────────────────────────
+# The real .env file with API keys must NEVER be committed.
+# Copy .env.example → .env and fill in real values locally.
+.env
+*.env
+# VS Code launch config may contain --dart-define keys — keep it private.
+.vscode/launch.json
+# ────────────────────────────────────────────────────────────────────────────
+
 # Miscellaneous
 *.class
 *.log
@@ -18,7 +27,6 @@ migrate_working_dir/
 *.iws
 .idea/
 
-.env
 
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line

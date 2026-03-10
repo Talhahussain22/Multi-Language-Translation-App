@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:ai_text_to_speech/model/gemini_response_model.dart';
 import 'package:ai_text_to_speech/Utils/prompts.dart';
+import 'package:ai_text_to_speech/services/app_config.dart';
 import 'package:bloc/bloc.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 
@@ -32,9 +32,9 @@ class GrammarTestBloc extends Bloc<GrammarTestEvent, GrammarTestState> {
     required String testType,
     required String count,
   }) async {
-    final apiKey = dotenv.env['OPENAI_API_KEY'] ?? dotenv.env['APIKEY'];
-    if (apiKey == null || apiKey.isEmpty) {
-      throw 'OpenAI API key is missing.';
+    const apiKey = AppConfig.openAiApiKey;
+    if (apiKey.isEmpty) {
+      throw 'OpenAI API key is missing. Build with --dart-define=OPENAI_API_KEY=your-key';
     }
 
     final url = Uri.parse('https://api.openai.com/v1/chat/completions');

@@ -1,5 +1,4 @@
 import 'package:ai_text_to_speech/model/history_model.dart';
-import 'package:ai_text_to_speech/model/hive_model.dart';
 import 'package:bloc/bloc.dart';
 import 'package:hive/hive.dart';
 import 'package:meta/meta.dart';

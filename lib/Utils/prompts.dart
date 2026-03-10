@@ -41,7 +41,7 @@ Each question MUST have:
      • "native"    : the word in $toLang native script / alphabet
      • "romanized" : pronunciation of that $toLang word in English letters (romanization)
    Include 1 correct $toLang translation + 3 believable but WRONG distractors (also in $toLang).
-3. "correctAnswer" – must exactly match one option\'s "native" field
+3. "correctAnswer" – must exactly match one option's "native" field
 
 ━━━━━━━━━━━━━━━  CONSTRAINTS  ━━━━━━━━━━━━━━━
 ✓ "question" is ALWAYS a plain English word – no exceptions
@@ -112,7 +112,7 @@ Return a raw JSON array. Each item:
 ✓ Options are SHORT concise definitions (1 sentence max)
 ✓ All 4 options must be in English
 ✓ 1 correct definition + 3 plausible but wrong definitions
-✓ correctAnswer must exactly match one option\'s "native" field
+✓ correctAnswer must exactly match one option's "native" field
 ✓ Shuffle options so correct answer is NOT always first
 ✓ Session ID $session – ensure fresh words every call
 ✓ Return ONLY valid raw JSON array – no markdown, no extra keys

@@ -9,33 +9,29 @@ class AdManager {
   AdManager._internal();
 
   bool _initialized = false;
-  bool _isShowingFullScreenAd = false; // prevent back-to-back
+  bool _isShowingFullScreenAd = false;
 
-  // Placeholder AdMob IDs (replace with real IDs when ready)
+  // ── Ad Unit IDs (test IDs in debug, real in release) ─────────────────────
   static const String rewardedAdUnitId = kDebugMode
       ? 'ca-app-pub-3940256099942544/5224354917' // Test Rewarded
       : 'ca-app-pub-2684836162704194/1140949286';
   static const String interstitialAdUnitId = kDebugMode
       ? 'ca-app-pub-3940256099942544/1033173712' // Test Interstitial
       : 'ca-app-pub-2684836162704194/9753936472';
+  static const String bannerAdUnitId = kDebugMode
+      ? 'ca-app-pub-3940256099942544/6300978111' // Test Banner
+      : 'ca-app-pub-2684836162704194/4092385998'; // Production Banner
 
-  RewardedAd? _rewardedAd;
+  // ── Cached ads ────────────────────────────────────────────────────────────
+  RewardedAd?     _rewardedAd;
   InterstitialAd? _interstitialAd;
 
-  // Getters to check if ads are currently loaded
-  bool get isRewardedAdReady => _rewardedAd != null;
+  bool get isRewardedAdReady     => _rewardedAd != null;
   bool get isInterstitialAdReady => _interstitialAd != null;
 
-  // Method to ensure ads are preloaded (useful for screens that need ads soon)
-  Future<void> ensureAdsPreloaded() async {
-    await initialize();
-    if (_rewardedAd == null) {
-      unawaited(loadRewardedAd(onAdFailed: null));
-    }
-    if (_interstitialAd == null) {
-      unawaited(loadInterstitialAd(onAdFailed: null));
-    }
-  }
+  // ─────────────────────────────────────────────────────────────────────────
+  // INTERNET CHECK
+  // ─────────────────────────────────────────────────────────────────────────
 
   Future<bool> _hasInternet() async {
     try {
@@ -46,69 +42,59 @@ class AdManager {
     }
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // INITIALIZE
+  // ─────────────────────────────────────────────────────────────────────────
+
   Future<void> initialize() async {
     if (_initialized) return;
-    // Optional: configure test device IDs here if you have them.
     await MobileAds.instance.updateRequestConfiguration(
-      RequestConfiguration(
-        // testDeviceIds: ['TEST_DEVICE_ID'],
-      ),
+      RequestConfiguration(),
     );
     await MobileAds.instance.initialize();
     _initialized = true;
 
-    // Preload both ad types once SDK is ready.
-    // Ignore failures; we'll try on-demand when showing.
     unawaited(loadRewardedAd(onAdFailed: null));
     unawaited(loadInterstitialAd(onAdFailed: null));
   }
 
-  // Rewarded Ad
-  Future<void> loadRewardedAd({
-    required VoidCallback? onAdFailed,
-  }) async {
+  /// Call from any screen's initState to ensure ads are warm.
+  Future<void> ensureAdsPreloaded() async {
     await initialize();
-    if (!await _hasInternet()) {
-      onAdFailed?.call();
-      return;
-    }
+    if (_rewardedAd == null)     unawaited(loadRewardedAd(onAdFailed: null));
+    if (_interstitialAd == null) unawaited(loadInterstitialAd(onAdFailed: null));
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // REWARDED AD
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Future<void> loadRewardedAd({required VoidCallback? onAdFailed}) async {
+    await initialize();
+    if (!await _hasInternet()) { onAdFailed?.call(); return; }
     await RewardedAd.load(
       adUnitId: rewardedAdUnitId,
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (ad) {
-          _rewardedAd = ad;
-        },
-        onAdFailedToLoad: (error) {
-          _rewardedAd = null;
-          onAdFailed?.call();
-        },
+        onAdLoaded:       (ad) => _rewardedAd = ad,
+        onAdFailedToLoad: (e)  { _rewardedAd = null; onAdFailed?.call(); },
       ),
     );
   }
 
   Future<void> _ensureRewardedLoaded() async {
     if (_rewardedAd != null) return;
-    final completer = Completer<void>();
-    if (!await _hasInternet()) {
-      completer.completeError('offline');
-      return completer.future;
-    }
+    final c = Completer<void>();
+    if (!await _hasInternet()) { c.completeError('offline'); return c.future; }
     await RewardedAd.load(
       adUnitId: rewardedAdUnitId,
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (ad) {
-          _rewardedAd = ad;
-          if (!completer.isCompleted) completer.complete();
-        },
-        onAdFailedToLoad: (error) {
-          _rewardedAd = null;
-          if (!completer.isCompleted) completer.completeError(error);
-        },
+        onAdLoaded:       (ad) { _rewardedAd = ad; if (!c.isCompleted) c.complete(); },
+        onAdFailedToLoad: (e)  { _rewardedAd = null; if (!c.isCompleted) c.completeError(e); },
       ),
     );
-    return completer.future;
+    return c.future;
   }
 
   Future<void> showRewardedAd({
@@ -116,43 +102,22 @@ class AdManager {
     required VoidCallback onAdDismissed,
     required VoidCallback onAdFailed,
   }) async {
-    if (_isShowingFullScreenAd) {
-      onAdFailed();
-      return;
-    }
-
+    if (_isShowingFullScreenAd) { onAdFailed(); return; }
     await initialize();
-
-    if (!await _hasInternet()) {
-      onAdFailed();
-      return;
-    }
-
-    // Ensure loaded, especially first time.
+    if (!await _hasInternet()) { onAdFailed(); return; }
     if (_rewardedAd == null) {
-      try {
-        await _ensureRewardedLoaded();
-      } catch (_) {
-        onAdFailed();
-        return;
-      }
+      try { await _ensureRewardedLoaded(); } catch (_) { onAdFailed(); return; }
     }
-
     final ad = _rewardedAd;
-    if (ad == null) {
-      onAdFailed();
-      return;
-    }
+    if (ad == null) { onAdFailed(); return; }
 
     _isShowingFullScreenAd = true;
-
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (ad) {
         _isShowingFullScreenAd = false;
         onAdDismissed();
         ad.dispose();
         _rewardedAd = null;
-        // Preload next rewarded for future use.
         unawaited(loadRewardedAd(onAdFailed: null));
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
@@ -160,106 +125,65 @@ class AdManager {
         onAdFailed();
         ad.dispose();
         _rewardedAd = null;
-        // Try preloading next.
         unawaited(loadRewardedAd(onAdFailed: null));
       },
     );
-
     ad.setImmersiveMode(true);
-    ad.show(onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
-      onRewardEarned();
-    });
+    ad.show(onUserEarnedReward: (_, __) => onRewardEarned());
   }
 
-  // Interstitial Ad
-  Future<void> loadInterstitialAd({
-    required VoidCallback? onAdFailed,
-  }) async {
+  // ─────────────────────────────────────────────────────────────────────────
+  // INTERSTITIAL AD
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Future<void> loadInterstitialAd({required VoidCallback? onAdFailed}) async {
     await initialize();
-    if (!await _hasInternet()) {
-      onAdFailed?.call();
-      return;
-    }
+    if (!await _hasInternet()) { onAdFailed?.call(); return; }
     await InterstitialAd.load(
       adUnitId: interstitialAdUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          _interstitialAd = ad;
-        },
-        onAdFailedToLoad: (error) {
-          _interstitialAd = null;
-          onAdFailed?.call();
-        },
+        onAdLoaded:       (ad) => _interstitialAd = ad,
+        onAdFailedToLoad: (e)  { _interstitialAd = null; onAdFailed?.call(); },
       ),
     );
   }
 
   Future<void> _ensureInterstitialLoaded() async {
     if (_interstitialAd != null) return;
-    final completer = Completer<void>();
-    if (!await _hasInternet()) {
-      completer.completeError('offline');
-      return completer.future;
-    }
+    final c = Completer<void>();
+    if (!await _hasInternet()) { c.completeError('offline'); return c.future; }
     await InterstitialAd.load(
       adUnitId: interstitialAdUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          _interstitialAd = ad;
-          if (!completer.isCompleted) completer.complete();
-        },
-        onAdFailedToLoad: (error) {
-          _interstitialAd = null;
-          if (!completer.isCompleted) completer.completeError(error);
-        },
+        onAdLoaded:       (ad) { _interstitialAd = ad; if (!c.isCompleted) c.complete(); },
+        onAdFailedToLoad: (e)  { _interstitialAd = null; if (!c.isCompleted) c.completeError(e); },
       ),
     );
-    return completer.future;
+    return c.future;
   }
 
   Future<void> showInterstitialAd({
     required VoidCallback onAdDismissed,
     required VoidCallback onAdFailed,
   }) async {
-    if (_isShowingFullScreenAd) {
-      onAdFailed();
-      return;
-    }
-
+    if (_isShowingFullScreenAd) { onAdFailed(); return; }
     await initialize();
-
-    if (!await _hasInternet()) {
-      onAdFailed();
-      return;
-    }
-
-    // Ensure loaded, especially first time.
+    if (!await _hasInternet()) { onAdFailed(); return; }
     if (_interstitialAd == null) {
-      try {
-        await _ensureInterstitialLoaded();
-      } catch (_) {
-        onAdFailed();
-        return;
-      }
+      try { await _ensureInterstitialLoaded(); } catch (_) { onAdFailed(); return; }
     }
-
     final ad = _interstitialAd;
-    if (ad == null) {
-      onAdFailed();
-      return;
-    }
+    if (ad == null) { onAdFailed(); return; }
 
     _isShowingFullScreenAd = true;
-
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (ad) {
         _isShowingFullScreenAd = false;
         onAdDismissed();
         ad.dispose();
         _interstitialAd = null;
-        // Preload next interstitial for future use.
         unawaited(loadInterstitialAd(onAdFailed: null));
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
@@ -267,12 +191,19 @@ class AdManager {
         onAdFailed();
         ad.dispose();
         _interstitialAd = null;
-        // Try preloading next.
         unawaited(loadInterstitialAd(onAdFailed: null));
       },
     );
-
     ad.setImmersiveMode(true);
     ad.show();
+  }
+
+  /// Convenience: show an interstitial if the ad is ready; silently skip if not.
+  Future<void> showInterstitialIfReady({VoidCallback? onDismissed}) async {
+    if (_isShowingFullScreenAd) return;
+    await showInterstitialAd(
+      onAdDismissed: onDismissed ?? () {},
+      onAdFailed:    () {},
+    );
   }
 }

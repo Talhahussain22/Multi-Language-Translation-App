@@ -2,12 +2,12 @@ import 'package:flutter_flip_card/flutter_flip_card.dart';
 import 'package:flutter/material.dart';
 
 class FlashCardWidget extends StatefulWidget {
-  String frontText;
-  String backText;
-  String fromLanguage;
-  String toLanguage;
+  final String frontText;
+  final String backText;
+  final String fromLanguage;
+  final String toLanguage;
 
-  FlashCardWidget({super.key, required this.frontText, required this.backText,required this.fromLanguage,required this.toLanguage});
+  const FlashCardWidget({super.key, required this.frontText, required this.backText, required this.fromLanguage, required this.toLanguage});
 
   @override
   State<FlashCardWidget> createState() => _FlashCardWidgetState();

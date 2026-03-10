@@ -8,6 +8,8 @@ import 'package:ai_text_to_speech/screen/components/CustomTextFeild.dart';
 import 'package:ai_text_to_speech/screen/components/language_picker_sheet.dart';
 import 'package:ai_text_to_speech/screen/HistoryPage.dart';
 import 'package:ai_text_to_speech/Utils/app_dialogs.dart';
+import 'package:ai_text_to_speech/services/ad_manager.dart';
+import 'package:ai_text_to_speech/services/usage_limit_service.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -32,6 +34,9 @@ class _HomePageState extends State<HomePage> {
 
   /// Holds the latest parsed translation result for rendering.
   TranslationResult? _currentResult;
+
+  final _adManager   = AdManager();
+  final _usageLimits = UsageLimitService();
 
   void setLanguages() {
     final hivebox = Hive.box<SavedLanguage>('saved_lang');
@@ -138,15 +143,18 @@ class _HomePageState extends State<HomePage> {
               context,
               title: 'Translation failed',
               error: state.error,
-              onRetry: () {
-                // Best-effort retry: re-dispatch the last translate action if your bloc supports it.
-                // If not available, user can tap Translate again.
-              },
+              onRetry: () {},
             );
           } else if (state is OnTranslateSuccessState) {
             setState(() {
               _currentResult = state.result;
               icon = state.isfavourite! ? Icons.favorite : Icons.favorite_outline;
+            });
+            // Record translation and show interstitial if threshold met
+            _usageLimits.recordTranslation().then((shouldShowAd) {
+              if (shouldShowAd && mounted) {
+                _adManager.showInterstitialIfReady();
+              }
             });
           }
         },
@@ -326,12 +334,20 @@ class _HomePageState extends State<HomePage> {
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 GestureDetector(
-                                  onTap: () {
+                                  onTap: () async {
                                     FocusScope.of(context).unfocus();
-                                    context.read<OnTranslateBloc>().add(
+                                    final bloc = context.read<OnTranslateBloc>();
+                                    // ── Daily limit check ────────────────
+                                    final canTranslate = await _usageLimits.canTranslate();
+                                    if (!canTranslate) {
+                                      if (!mounted) return;
+                                      _showTranslationLimitDialog(context);
+                                      return;
+                                    }
+
+                                    bloc.add(
                                           OnTranslateButtonClicked(
-                                            text: fromfeildcontroller.text
-                                                .toString(),
+                                            text: fromfeildcontroller.text.toString(),
                                             fromLanguage: fromLanguage!,
                                             toLanguage: toLanguage!,
                                           ),
@@ -503,6 +519,76 @@ class _HomePageState extends State<HomePage> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  // ── Daily limit dialog ──────────────────────────────────────────────────
+  void _showTranslationLimitDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.lock_clock, color: Color(0xFFFF6B35)),
+            SizedBox(width: 10),
+            Text('Daily Limit Reached', style: TextStyle(fontSize: 17)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'You have used all ${UsageLimitService.dailyTranslationLimit} free translations for today.',
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Watch a short ad to unlock 10 more translations now, or come back tomorrow.',
+              style: TextStyle(fontSize: 13, color: Colors.black54),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Later'),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.play_circle_fill, size: 18),
+            label: const Text('Watch Ad'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF6B35),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _adManager.showRewardedAd(
+                onRewardEarned: () {
+                  _usageLimits.grantRewardedTranslations();
+                },
+                onAdDismissed: () {
+                  if (mounted) {
+                    AppDialogs.showSnack(context,
+                        message: '10 translations unlocked!',
+                        background: Colors.green);
+                  }
+                },
+                onAdFailed: () {
+                  if (mounted) {
+                    AppDialogs.showSnack(context,
+                        message: 'Ad not available right now. Try again later.',
+                        background: Colors.redAccent);
+                  }
+                },
+              );
+            },
+          ),
+        ],
       ),
     );
   }

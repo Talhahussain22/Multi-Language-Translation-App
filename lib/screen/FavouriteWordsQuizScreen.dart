@@ -1,12 +1,14 @@
 import 'package:ai_text_to_speech/bloc/favouritequizBloc/favourite_quiz_bloc.dart';
 import 'package:ai_text_to_speech/model/gemini_response_model.dart';
 import 'package:ai_text_to_speech/model/hive_model.dart';
+import 'package:ai_text_to_speech/services/ad_manager.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../Utils/app_dialogs.dart';
 import 'TestResultScreen.dart';
+import 'components/app_banner_ad.dart';
 import 'components/quiz_option_tile.dart';
 
 class FavouriteWordsQuizScreen extends StatefulWidget {
@@ -32,6 +34,8 @@ class _FavouriteWordsQuizScreenState extends State<FavouriteWordsQuizScreen> {
   @override
   void initState() {
     totalMcqs = widget.words.length;
+    // Preload interstitial while user plays through the quiz.
+    AdManager().ensureAdsPreloaded();
     context
         .read<FavouriteQuizBloc>()
         .add(OnFavouriteQuizStartButtonPressed(words: widget.words));
@@ -253,7 +257,11 @@ class _FavouriteWordsQuizScreenState extends State<FavouriteWordsQuizScreen> {
           return const SizedBox.shrink();
         },
       ),
-      bottomNavigationBar: BlocBuilder<FavouriteQuizBloc, FavouriteQuizState>(
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const AppBannerAd(),
+          BlocBuilder<FavouriteQuizBloc, FavouriteQuizState>(
         builder: (context, state) {
           if (state is! FavouriteQuizLoadedState) return const SizedBox.shrink();
           final data = state.mcqs;
@@ -359,6 +367,8 @@ class _FavouriteWordsQuizScreenState extends State<FavouriteWordsQuizScreen> {
             ),
           );
         },
+      ),
+        ],
       ),
     );
   }

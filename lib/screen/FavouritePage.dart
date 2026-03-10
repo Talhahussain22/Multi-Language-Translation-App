@@ -14,11 +14,19 @@ class Favouritepage extends StatefulWidget {
 }
 
 class _FavouritepageState extends State<Favouritepage> {
-  List<FavoriteWord>? words;
-  List<FavoriteWord>? intitalwords;
+  List<FavoriteWord> _words = [];
+
+  void _reloadWords() {
+    final box = Hive.box<FavoriteWord>('favourites');
+    setState(() {
+      _words = box.values.toList().reversed.toList();
+    });
+  }
 
   @override
   void initState() {
+    super.initState();
+    _reloadWords();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         AppDialogs.showSnack(
@@ -29,8 +37,6 @@ class _FavouritepageState extends State<Favouritepage> {
         );
       }
     });
-
-    super.initState();
   }
 
   @override
@@ -88,24 +94,38 @@ class _FavouritepageState extends State<Favouritepage> {
           ),
         ],
       ),
-      body: BlocBuilder<OnFavouriteDeleteBloc,OnFavouriteDeleteState>(
-        builder: (context,state) {
-          intitalwords = Hive.box<FavoriteWord>('favourites').values.toList();
-          words=intitalwords?.reversed.toList();
-          return words!.isEmpty?Center(child: Image.asset('assets/data_unavailiable.png'),):SingleChildScrollView(
-            child: ListView.builder(
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              itemCount: words?.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: FlashCardWidget(frontText: words![index].word, backText:words![index].translation,fromLanguage: words![index].fromLanguage,toLanguage: words![index].toLanguage,),
-                );
-              },
-            ),
+      body: BlocBuilder<OnFavouriteDeleteBloc, OnFavouriteDeleteState>(
+        builder: (context, state) {
+          // Always read from Hive box (in-memory, O(1)) so deletions are reflected
+          if (state is OnFavouriteDeleteLoadedState) {
+            final box = Hive.box<FavoriteWord>('favourites');
+            _words = box.values.toList().reversed.toList();
+          }
+          if (_words.isEmpty) {
+            return Center(
+              child: Image.asset(
+                'assets/data_unavailiable.png',
+                cacheWidth: 400,
+              ),
+            );
+          }
+          return ListView.builder(
+            itemCount: _words.length,
+            padding: const EdgeInsets.all(8),
+            itemBuilder: (context, index) {
+              final w = _words[index];
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: FlashCardWidget(
+                  frontText: w.word,
+                  backText: w.translation,
+                  fromLanguage: w.fromLanguage,
+                  toLanguage: w.toLanguage,
+                ),
+              );
+            },
           );
-        }
+        },
       ),
     );
   }

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:ai_text_to_speech/services/app_config.dart';
 import 'package:http/http.dart' as http;
 
 class OpenAISummary {
@@ -9,9 +9,9 @@ class OpenAISummary {
     required List<String> words,
     required String targetLanguage,
   }) async {
-    final apiKey = dotenv.env['OPENAI_API_KEY'] ?? dotenv.env['APIKEY'];
-    if (apiKey == null || apiKey.isEmpty) {
-      throw 'OpenAI API key is missing. Please set OPENAI_API_KEY or APIKEY in .env';
+    const apiKey = AppConfig.openAiApiKey;
+    if (apiKey.isEmpty) {
+      throw 'OpenAI API key is missing. Build with --dart-define=OPENAI_API_KEY=your-key';
     }
 
     final prompt = '''You are a friendly storyteller who makes learning fun!

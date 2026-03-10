@@ -1,6 +1,9 @@
 import 'package:ai_text_to_speech/bloc/grammarTestBloc/grammar_test_bloc.dart';
 import 'package:ai_text_to_speech/screen/GrammarQuizScreen.dart';
+import 'package:ai_text_to_speech/screen/components/app_banner_ad.dart';
 import 'package:ai_text_to_speech/services/ad_manager.dart';
+import 'package:ai_text_to_speech/services/usage_limit_service.dart';
+import 'package:ai_text_to_speech/Utils/app_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -16,7 +19,8 @@ class _GrammarTestScreenState extends State<GrammarTestScreen> with SingleTicker
 
   String _selectedPracticeMode = 'Identify Part of Speech';
   String _selectedSpecificType = 'Nouns';
-  final _adManager = AdManager();
+  final _adManager   = AdManager();
+  final _usageLimits = UsageLimitService();
 
   // Practice Modes
   final List<Map<String, dynamic>> _practiceModes = [
@@ -126,17 +130,29 @@ class _GrammarTestScreenState extends State<GrammarTestScreen> with SingleTicker
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      bottomNavigationBar: const AppBannerAd(),
     );
   }
 
-  void _startPractice() {
+  void _startPractice() async {
+    // ── Daily quiz limit check ─────────────────────────────────────────────
+    final canGenerate = await _usageLimits.canGenerateQuiz();
+    if (!canGenerate) {
+      if (!mounted) return;
+      _showQuizLimitDialog();
+      return;
+    }
+
+    await _usageLimits.recordQuizGeneration();
+
     final isGeneralTab = _tabController.index == 0;
     final testType = isGeneralTab ? _selectedPracticeMode : 'Focused: $_selectedSpecificType';
 
+    if (!mounted) return;
     context.read<GrammarTestBloc>().add(GrammarTestStarted(
-      language: 'English',  // Always English
+      language: 'English',
       testType: testType,
-      count: '15',  // Always 15 questions
+      count: '15',
     ));
 
     Navigator.push(
@@ -147,6 +163,77 @@ class _GrammarTestScreenState extends State<GrammarTestScreen> with SingleTicker
           testType: testType,
           totalQuestions: 15,
         ),
+      ),
+    );
+  }
+
+  void _showQuizLimitDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.lock_clock, color: Color(0xFFFF6B35)),
+            SizedBox(width: 10),
+            Text('Quiz Limit Reached', style: TextStyle(fontSize: 17)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'You have used all ${UsageLimitService.dailyQuizLimit} free quiz generations for today.',
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Watch a short ad to unlock 1 more quiz, or come back tomorrow.',
+              style: TextStyle(fontSize: 13, color: Colors.black54),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Later'),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.play_circle_fill, size: 18),
+            label: const Text('Watch Ad'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF003366),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _adManager.showRewardedAd(
+                onRewardEarned: () {
+                  _usageLimits.grantRewardedQuiz();
+                },
+                onAdDismissed: () {
+                  if (mounted) {
+                    AppDialogs.showSnack(context,
+                        message: '1 quiz generation unlocked!',
+                        background: Colors.green);
+                    // Immediately start the quiz after reward
+                    _startPractice();
+                  }
+                },
+                onAdFailed: () {
+                  if (mounted) {
+                    AppDialogs.showSnack(context,
+                        message: 'Ad not available. Try again later.',
+                        background: Colors.redAccent);
+                  }
+                },
+              );
+            },
+          ),
+        ],
       ),
     );
   }

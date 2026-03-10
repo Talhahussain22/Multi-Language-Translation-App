@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 class Customtextfield_Homepage extends StatelessWidget {
   final TextEditingController controller;
-  String hintext;
-  bool? isreadOnly;
-  Function(String)? onChanged;
-  Customtextfield_Homepage({super.key,required this.controller,required this.hintext,this.isreadOnly,this.onChanged});
+  final String hintext;
+  final bool? isreadOnly;
+  final Function(String)? onChanged;
+  const Customtextfield_Homepage({super.key, required this.controller, required this.hintext, this.isreadOnly, this.onChanged});
 
   @override
   Widget build(BuildContext context) {

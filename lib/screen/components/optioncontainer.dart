@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 class OptionsContainer extends StatelessWidget {
-  Color color;
-  String text;
-  OptionsContainer({super.key, required this.text, required this.color});
+  final Color color;
+  final String text;
+  const OptionsContainer({super.key, required this.text, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +19,7 @@ class OptionsContainer extends StatelessWidget {
           color: color,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
